@@ -1,5 +1,5 @@
-/// -------------------------------------------------------
-/// APP ROUTER — Aligné sur API_DOCUMENTATION v2.0
+/// --------------------------------------------------
+///  APP ROUTER — Aligné sur API_DOCUMENTATION v2.0
 /// -------------------------------------------------------
 /// Routes basées sur la Role Access Matrix de l'API :
 ///   - Super Admin → /api/users, /api/admins
@@ -11,6 +11,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../features/auth/presentation/screens/splash_screen.dart';
+import '../../features/auth/presentation/screens/onboarding_screen.dart';
 
 // ═══════════════════════════════════════════════════════
 // PATHS DES ROUTES
@@ -44,9 +46,11 @@ class AppRoutes {
   static const String adminAnalytics = '/admin/analytics';
   static const String adminProfile = '/admin/profile';
   static const String adminSettings = '/admin/settings';
+  static const String adminAutoPilot = '/admin/auto-pilot';
+static const String adminHelp = '/admin/help';
 
   // ── Client (role = client) ───────────────────────────
-  static const String clientHome = '/client/home';
+static const String clientExplore = '/client/explore';  
   static const String clientSearch = '/client/search';
   static const String clientCarDetail = '/client/cars/:id';
   static const String clientBookings = '/client/bookings';
@@ -88,14 +92,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isLoggedIn && isAuthRoute) {
         return userRole == 'admin' || userRole == 'super_admin'
             ? AppRoutes.adminDashboard
-            : AppRoutes.clientHome;
+            : AppRoutes.clientExplore;
       }
 
       // Client essaie d'aller sur admin
       if (isLoggedIn &&
           userRole == 'client' &&
           state.matchedLocation.startsWith('/admin')) {
-        return AppRoutes.clientHome;
+       return AppRoutes.clientExplore;
       }
 
       // Admin essaie d'aller sur client
@@ -111,19 +115,15 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       // ── Splash ───────────────────────────────────────
       GoRoute(
-        path: AppRoutes.splash,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: CircularProgressIndicator()),
-        ),
-      ),
+  path: AppRoutes.splash,
+  builder: (context, state) => const SplashScreen(),
+),
 
       // ── Onboarding ───────────────────────────────────
       GoRoute(
-        path: AppRoutes.onboarding,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Onboarding')), // ← Remplacer
-        ),
-      ),
+  path: AppRoutes.onboarding,
+  builder: (context, state) => const OnboardingScreen(),
+),
 
       // ── Auth ─────────────────────────────────────────
       GoRoute(
@@ -188,6 +188,16 @@ final routerProvider = Provider<GoRouter>((ref) {
               body: Center(child: Text('Admin Profile')),
             ),
           ),
+          GoRoute(path: AppRoutes.adminAutoPilot, 
+          builder: (_, _) => const Scaffold(
+            body: Center(child: Text('Auto-Pilot Settings')),
+            ),
+            ),
+          GoRoute(path: AppRoutes.adminHelp, 
+          builder: (_, _) => const Scaffold(
+            body: Center(child: Text('Help')),
+            ),
+            ),
         ],
       ),
 
@@ -219,12 +229,12 @@ final routerProvider = Provider<GoRouter>((ref) {
           return Scaffold(body: Center(child: Text('Client $id')));
         },
       ),
-      GoRoute(path: AppRoutes.adminSmartPricing, builder: (_, __) => const Scaffold(body: Center(child: Text('Smart Pricing')))),
-      GoRoute(path: AppRoutes.adminAlerts, builder: (_, __) => const Scaffold(body: Center(child: Text('Alerts')))),
-      GoRoute(path: AppRoutes.adminMaintenance, builder: (_, __) => const Scaffold(body: Center(child: Text('Maintenance')))),
-      GoRoute(path: AppRoutes.adminFinances, builder: (_, __) => const Scaffold(body: Center(child: Text('Finances')))),
-      GoRoute(path: AppRoutes.adminAnalytics, builder: (_, __) => const Scaffold(body: Center(child: Text('Analytics')))),
-      GoRoute(path: AppRoutes.adminSettings, builder: (_, __) => const Scaffold(body: Center(child: Text('Settings')))),
+      GoRoute(path: AppRoutes.adminSmartPricing, builder: (_, _) => const Scaffold(body: Center(child: Text('Smart Pricing')))),
+      GoRoute(path: AppRoutes.adminAlerts, builder: (_, _) => const Scaffold(body: Center(child: Text('Alerts')))),
+      GoRoute(path: AppRoutes.adminMaintenance, builder: (_, _) => const Scaffold(body: Center(child: Text('Maintenance')))),
+      GoRoute(path: AppRoutes.adminFinances, builder: (_, _) => const Scaffold(body: Center(child: Text('Finances')))),
+      GoRoute(path: AppRoutes.adminAnalytics, builder: (_, _) => const Scaffold(body: Center(child: Text('Analytics')))),
+      GoRoute(path: AppRoutes.adminSettings, builder: (_, _) => const Scaffold(body: Center(child: Text('Settings')))),
 
       // ── Client Shell (avec bottom nav) ───────────────
       ShellRoute(
@@ -233,7 +243,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         },
         routes: [
           GoRoute(
-            path: AppRoutes.clientHome,
+            path: AppRoutes.clientExplore,
             builder: (context, state) => const Scaffold(
               body: Center(child: Text('Home')),
             ),

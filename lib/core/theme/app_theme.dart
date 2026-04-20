@@ -3,6 +3,7 @@
 /// -------------------------------------------------------
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 // ═══════════════════════════════════════════════════════
 // COULEURS (corrigées selon les maquettes)
@@ -208,6 +209,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
+      fontFamily: GoogleFonts.outfit().fontFamily,
 
       // ── Color Scheme ─────────────────────────────────
       colorScheme: const ColorScheme.light(

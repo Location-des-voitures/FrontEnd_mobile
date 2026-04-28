@@ -86,7 +86,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   else
                     // Page 1 : logo rRw à gauche
                     const Text(
-                      'rRw',
+                      'FlotTrack',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
@@ -98,7 +98,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                   // rRw centré (pages 2 et 3)
                   if (_page > 0)
                     const Text(
-                      'rRw',
+                      'FlotTrack',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
@@ -174,14 +174,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                // TODO: Remplacer par Image.asset('assets/images/onboarding_car.png')
-                child: const Center(
-                  child: Icon(
-                    Icons.directions_car,
-                    size: 100,
-                    color: Color(0xFF4A90D9),
-                  ),
-                ),
+               
+                child: Image.asset(
+  'assets/images/splash.jpg',
+  fit: BoxFit.cover,
+  width: double.infinity,
+),
               ),
             ),
           ),

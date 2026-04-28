@@ -209,7 +209,7 @@ class AppTheme {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      fontFamily: GoogleFonts.outfit().fontFamily,
+      fontFamily: GoogleFonts.roboto().fontFamily,
 
       // ── Color Scheme ─────────────────────────────────
       colorScheme: const ColorScheme.light(

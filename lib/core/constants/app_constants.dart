@@ -1,22 +1,23 @@
 /// -------------------------------------------------------
-/// APP CONSTANTS — Aligné sur API_DOCUMENTATION v2.0
+/// APP CONSTANTS — FlotTrack
 /// -------------------------------------------------------
+library;
 
 class AppConstants {
   AppConstants._();
 
   // ── Nom de l'app ─────────────────────────────────────
-  static const String appName = 'rRw';
+  static const String appName = 'FlotTrack';
 
-  // ── Rôles (3 rôles dans le système) ──────────────────
+  // ── Rôles ────────────────────────────────────────────
   static const String roleSuperAdmin = 'super_admin';
   static const String roleAdmin = 'admin';
   static const String roleClient = 'client';
 
-  // ── Clés de stockage sécurisé (FlutterSecureStorage) ─
-  static const String tokenKey = 'auth_token';
-  static const String tokenTypeKey = 'token_type';     // "bearer"
-  static const String userKey = 'user_data';            // User JSON stringifié
+  // ── Clés de stockage sécurisé ────────────────────────
+  static const String tokenKey = 'flottrack_token';
+  static const String refreshTokenKey = 'flottrack_refresh_token';
+  static const String userKey = 'flottrack_user_data';
 
   // ── Clés SharedPreferences ───────────────────────────
   static const String isFirstLaunchKey = 'is_first_launch';
@@ -24,26 +25,39 @@ class AppConstants {
   static const String languageKey = 'app_language';
 
   // ── Token ────────────────────────────────────────────
-  // Le token JWT expire après 3600 secondes (1h)
-  // selon la doc API : "expires_in": 3600
-  static const int tokenExpiresIn = 3600;
+  static const int tokenLifetimeSeconds = 3600; // 60 minutes
+
+  // ── OTP ──────────────────────────────────────────────
+  static const int otpLength = 6;
+  static const int otpExpiryMinutes = 10;
+  static const int otpMaxAttempts = 5;
 
   // ── Pagination ───────────────────────────────────────
-  // Valeur par défaut côté API : 15 items/page
   static const int defaultPageSize = 15;
+  static const int maxPageSize = 100;
 
   // ── Formats de date ──────────────────────────────────
   static const String dateFormat = 'dd/MM/yyyy';
   static const String dateTimeFormat = 'dd/MM/yyyy HH:mm';
   static const String timeFormat = 'HH:mm';
-  // Format de date retourné par l'API Laravel
-  static const String apiDateFormat = 'yyyy-MM-dd HH:mm:ss';
+  static const String apiDateFormat = 'yyyy-MM-dd';
 
   // ── Devise ───────────────────────────────────────────
-  static const String currency = 'DH';
+  static const String currency = 'MAD';
 
-  // ── Admin creation strategies ────────────────────────
-  // POST /api/admins → notify_via
-  static const String notifyPasswordReset = 'password_reset';
-  static const String notifyCredentials = 'credentials';
+  // ── Plans d'abonnement ───────────────────────────────
+  static const String planFree = 'free';
+  static const String planPro = 'pro';
+  static const String planPremium = 'premium';
+
+  static const Map<String, double> planPrices = {
+    'free': 0.0,
+    'pro': 99.0,
+    'premium': 199.0,
+  };
+
+  // ── Subscription statuts ─────────────────────────────
+  static const String subscriptionActive = 'active';
+  static const String subscriptionExpired = 'expired';
+  static const String subscriptionCancelled = 'cancelled';
 }

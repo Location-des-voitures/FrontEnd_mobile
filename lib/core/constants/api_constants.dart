@@ -1,112 +1,84 @@
 /// -------------------------------------------------------
-/// API CONSTANTS — Aligné sur API_DOCUMENTATION v2.0
+/// API CONSTANTS — FlotTrack API v1.0
 /// -------------------------------------------------------
-/// Tous les endpoints correspondent exactement à ton
-/// backend Laravel. Vérifié contre la doc API.
+/// Aligné sur la documentation officielle de l'API.
+/// Base URL : http://localhost:8000/api
+/// Auth : Bearer JWT (60 minutes)
 /// -------------------------------------------------------
+library;
 
 class ApiConstants {
   ApiConstants._();
 
   // ── URL de base ──────────────────────────────────────
-  // Émulateur Android : http://10.0.2.2:8000/api
-  // iOS simulator    : http://localhost:8000/api
-  // Appareil réel    : http://ton-ip-locale:8000/api
-  // Production       : https://ton-domaine.com/api
   static const String baseUrl = 'http://localhost:8000/api';
 
   // ── Timeout ──────────────────────────────────────────
   static const Duration connectTimeout = Duration(seconds: 15);
   static const Duration receiveTimeout = Duration(seconds: 15);
 
-  // ══════════════════════════════════════════════════════
-  // AUTH — Publiques (pas de token requis)
-  // ══════════════════════════════════════════════════════
-  /// POST — Créer un compte client
-  /// Rate limit: 3 req/min
+  // ═══════════════════════════════════════════════════════
+  // AUTH (Public)
+  // ═══════════════════════════════════════════════════════
   static const String register = '/auth/register';
-
-  /// POST — Se connecter (retourne JWT)
-  /// Rate limit: 5 req/min
+  static const String verifyOtp = '/auth/verify-otp';
+  static const String resendOtp = '/auth/resend-otp';
   static const String login = '/auth/login';
-
-  /// POST — Se déconnecter (invalide le token)
-  /// Requiert: JWT
-  static const String logout = '/auth/logout';
-
-  /// POST — Rafraîchir le token JWT
-  /// Requiert: JWT
-  static const String refreshToken = '/auth/refresh';
-
-  /// GET — Récupérer l'utilisateur authentifié
-  /// Requiert: JWT
-  static const String me = '/auth/me';
-
-  // ══════════════════════════════════════════════════════
-  // PASSWORD RESET — Publiques
-  // ══════════════════════════════════════════════════════
-  /// POST — Demander un lien de reset
-  /// Rate limit: 3 req/min
   static const String forgotPassword = '/auth/forgot-password';
-
-  /// POST — Réinitialiser le mot de passe avec le token
-  /// Rate limit: 3 req/min
+  static const String verifyResetOtp = '/auth/verify-reset-otp';
   static const String resetPassword = '/auth/reset-password';
 
-  // ══════════════════════════════════════════════════════
-  // EMAIL VERIFICATION
-  // ══════════════════════════════════════════════════════
-  /// GET — Vérifier l'email (lien cliqué depuis l'inbox)
-  /// URL signée, publique
-  static String verifyEmail(int id, String hash) => '/email/verify/$id/$hash';
+  // ── Auth Google ──────────────────────────────────────
+  static const String googleRedirect = '/auth/google/redirect';
+  static const String googleMobile = '/auth/google/mobile';
 
-  /// POST — Renvoyer l'email de vérification
-  /// Requiert: JWT | Rate limit: 1 req/min
-  static const String resendVerification = '/email/resend';
+  // ── Auth (Protected) ────────────────────────────────
+  static const String logout = '/auth/logout';
+  static const String refreshToken = '/auth/refresh';
+  static const String me = '/auth/me';
 
-  // ══════════════════════════════════════════════════════
-  // SUPER ADMIN — Gestion des utilisateurs
-  // ══════════════════════════════════════════════════════
-  /// GET — Liste de tous les utilisateurs
-  /// Query params: ?role=admin&is_active=false&per_page=10
-  static const String users = '/users';
+  // ═══════════════════════════════════════════════════════
+  // SUPER ADMIN — User Management
+  // ═══════════════════════════════════════════════════════
+  static const String users = '/admin/users';
+  static String userById(int id) => '/admin/users/$id';
+  static String activateUser(int id) => '/admin/users/$id/activate';
+  static String deactivateUser(int id) => '/admin/users/$id/deactivate';
+  static String deleteUser(int id) => '/admin/users/$id';
 
-  /// GET — Détail d'un utilisateur
-  static String userById(int id) => '/users/$id';
+  // ═══════════════════════════════════════════════════════
+  // SUPER ADMIN — Admin Management (Loueurs)
+  // ═══════════════════════════════════════════════════════
+  static const String admins = '/admin/admins';
+  static String adminById(int id) => '/admin/admins/$id';
+  static const String createAdmin = '/admin/admins';
+  static String activateAdmin(int id) => '/admin/admins/$id/activate';
+  static String suspendAdmin(int id) => '/admin/admins/$id/suspend';
+  static String deleteAdmin(int id) => '/admin/admins/$id';
 
-  /// PUT — Activer un compte
-  static String activateUser(int id) => '/users/$id/activate';
+  // ═══════════════════════════════════════════════════════
+  // SUPER ADMIN — Subscription Management
+  // ═══════════════════════════════════════════════════════
+  static const String subscriptionStats = '/admin/subscriptions/stats';
+  static const String subscriptions = '/admin/subscriptions';
+  static String subscriptionById(int id) => '/admin/subscriptions/$id';
+  static const String createSubscription = '/admin/subscriptions';
+  static String renewSubscription(int id) => '/admin/subscriptions/$id/renew';
+  static String cancelSubscription(int id) => '/admin/subscriptions/$id/cancel';
 
-  /// PUT — Désactiver un compte
-  static String deactivateUser(int id) => '/users/$id/deactivate';
+  // ═══════════════════════════════════════════════════════
+  // SUPER ADMIN — System Monitoring
+  // ═══════════════════════════════════════════════════════
+  static const String systemHealth = '/admin/monitoring/health';
+  static const String loginLogs = '/admin/monitoring/login-logs';
+  static const String loginStats = '/admin/monitoring/login-stats';
+  static const String activityLogs = '/admin/monitoring/activity-logs';
 
-  /// DELETE — Supprimer un utilisateur
-  static String deleteUser(int id) => '/users/$id';
-
-  /// POST — Créer un admin (loueur)
-  static const String createAdmin = '/admins';
-
-  // ══════════════════════════════════════════════════════
-  // ADMIN (Loueur) — Routes protégées role=admin
-  // ══════════════════════════════════════════════════════
-  /// GET — Dashboard admin
-  static const String adminDashboard = '/admin/dashboard';
-
-  /// GET — Liste des clients de l'admin
-  static const String adminClients = '/admin/clients';
-
-  // ══════════════════════════════════════════════════════
-  // CLIENT — Routes protégées role=client
-  // ══════════════════════════════════════════════════════
-  /// GET — Profil du client
-  static const String clientProfile = '/client/profile';
-
-  /// GET — Voitures disponibles
-  static const String clientCars = '/client/cars';
-
-  /// GET — Réservations du client
-  static const String clientReservations = '/client/reservations';
-
-  /// POST — Créer une réservation
-  static const String createReservation = '/client/reservations';
+  // ═══════════════════════════════════════════════════════
+  // SUPER ADMIN — Dashboard
+  // ═══════════════════════════════════════════════════════
+  static const String dashboard = '/admin/dashboard';
+  static const String dashboardKpis = '/admin/dashboard/kpis';
+  static const String dashboardAlerts = '/admin/dashboard/alerts';
+  static const String dashboardCharts = '/admin/dashboard/charts';
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:mobile/core/theme/app_theme.dart' show AppColors;
 
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
@@ -55,36 +56,38 @@ class SplashScreen extends StatelessWidget {
                   // "ELITE CONCIERGE"
                   Text(
                     'ELITE CONCIERGE',
-                    style: GoogleFonts.outfit(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w400,
+                    style: GoogleFonts.roboto(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
                       letterSpacing: 6,
-                      color: const Color(0xFFB8B0FF).withValues(alpha: 0.6),
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(height: 16),
 
                   // Logo "rRw"
-                  Text(
-                    'rRw',
-                    style: GoogleFonts.cormorantGaramond(
-                      fontSize: 96,
-                      fontWeight: FontWeight.w300,
-                      letterSpacing: -3,
-                      color: const Color(0xFFCBC4FF),
-                      height: 0.9,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
+                 FittedBox(
+  fit: BoxFit.scaleDown,
+  child: Text(
+    'FlotTrack',
+    style: GoogleFonts.roboto(
+      fontSize: 80,
+      fontWeight: FontWeight.w700,
+      letterSpacing: -2,
+      color: const Color(0xFFB8B8D4).withValues(alpha: 0.8),
+      height: 0.9,
+    ),
+  ),
+),
 
                   // "THE OBSIDIAN GALLERY"
                   Text(
                     'THE OBSIDIAN GALLERY',
-                    style: GoogleFonts.outfit(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w300,
+                    style: GoogleFonts.roboto(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
                       letterSpacing: 6,
-                      color: Colors.white.withValues(alpha: 0.45),
+                      color: Colors.white,
                     ),
                   ),
 
@@ -94,29 +97,26 @@ class SplashScreen extends StatelessWidget {
                   SizedBox(
                     width: double.infinity,
                     height: 52,
-                    child: OutlinedButton(
+                    child: ElevatedButton(
                       onPressed: () {
                         context.go('/onboarding');
                       },
-                      style: OutlinedButton.styleFrom(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
-                        backgroundColor: Colors.white.withValues(alpha: 0.06),
                         minimumSize: const Size(double.infinity, 52),
-                        side: BorderSide(
-                          color: Colors.white.withValues(alpha: 0.2),
-                          width: 0.8,
-                        ),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
+                        elevation: 0,
                       ),
                       child: Text(
                         'GET STARTED',
-                        style: GoogleFonts.outfit(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w500,
+                        style: GoogleFonts.roboto(
+                          fontSize: 15,
+                          fontWeight: FontWeight.w600,
                           letterSpacing: 4,
-                          color: Colors.white.withValues(alpha: 0.9),
+                          color: Colors.white,
                         ),
                       ),
                     ),
@@ -134,7 +134,7 @@ class SplashScreen extends StatelessWidget {
                         children: [
                           Text(
                             'PRECISION',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.roboto(
                               fontSize: 7,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 3,
@@ -144,7 +144,7 @@ class SplashScreen extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             'Machined',
-                            style: GoogleFonts.cormorantGaramond(
+                            style: GoogleFonts.roboto(
                               fontSize: 13,
                               fontWeight: FontWeight.w400,
                               fontStyle: FontStyle.italic,
@@ -159,7 +159,7 @@ class SplashScreen extends StatelessWidget {
                         children: [
                           Text(
                             'EST.',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.roboto(
                               fontSize: 7,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 3,
@@ -169,7 +169,7 @@ class SplashScreen extends StatelessWidget {
                           const SizedBox(height: 3),
                           Text(
                             'MMXXIV',
-                            style: GoogleFonts.outfit(
+                            style: GoogleFonts.roboto(
                               fontSize: 11,
                               fontWeight: FontWeight.w400,
                               letterSpacing: 2,

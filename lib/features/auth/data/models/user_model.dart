@@ -1,21 +1,7 @@
 /// -------------------------------------------------------
-/// USER MODEL — Traducteur JSON ↔ Dart
+/// USER MODEL — FlotTrack API
 /// -------------------------------------------------------
-/// Extends l'entité User du Domain.
-/// Ajoute fromJson() et toJson() pour communiquer
-/// avec l'API Laravel.
-///
-/// Structure JSON de l'API (login, register, me) :
-/// {
-///   "id":             5,
-///   "name":           "Jane Dupont",
-///   "email":          "jane@example.com",
-///   "role":           "client",
-///   "is_active":      true,
-///   "email_verified": true,
-///   "created_at":     "2024-06-01 09:00:00"
-/// }
-/// -------------------------------------------------------
+library;
 
 import '../../domain/entities/user.dart';
 
@@ -26,16 +12,12 @@ class UserModel extends User {
     required super.email,
     required super.role,
     required super.isActive,
-    required super.emailVerified,
-    required super.createdAt,
+    super.emailVerifiedAt,
+    super.googleId,
+    super.googleAvatar,
   });
 
-  /// Crée un UserModel à partir du JSON de l'API
-  ///
-  /// Utilisé dans 2 cas :
-  ///   1. Login  → json = response['data']['user']
-  ///   2. Me     → json = response['data']
-  ///   3. Register → json = response['data']
+  /// Parse depuis le JSON de l'API
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
       id: json['id'] as int,
@@ -43,13 +25,13 @@ class UserModel extends User {
       email: json['email'] as String,
       role: json['role'] as String,
       isActive: json['is_active'] as bool,
-      emailVerified: json['email_verified'] as bool,
-      createdAt: json['created_at'] as String,
+      emailVerifiedAt: json['email_verified_at'] as String?,
+      googleId: json['google_id'] as String?,
+      googleAvatar: json['google_avatar'] as String?,
     );
   }
 
-  /// Convertit le UserModel en JSON
-  /// Utile pour stocker le user localement (cache)
+  /// Convertir en JSON (pour cache local)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -57,14 +39,9 @@ class UserModel extends User {
       'email': email,
       'role': role,
       'is_active': isActive,
-      'email_verified': emailVerified,
-      'created_at': createdAt,
+      'email_verified_at': emailVerifiedAt,
+      'google_id': googleId,
+      'google_avatar': googleAvatar,
     };
-  }
-
-  /// Crée un UserModel depuis un JSON stocké localement
-  /// (même format que toJson)
-  factory UserModel.fromLocalJson(Map<String, dynamic> json) {
-    return UserModel.fromJson(json);
   }
 }

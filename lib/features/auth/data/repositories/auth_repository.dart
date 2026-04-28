@@ -1,26 +1,3 @@
-/// -------------------------------------------------------
-/// AUTH REPOSITORY IMPLEMENTATION
-/// -------------------------------------------------------
-/// Implémente le contrat AuthRepository du Domain.
-///
-/// Son unique job :
-///   1. Appeler le datasource
-///   2. Si succès → retourner Right(user)
-///   3. Si exception → convertir en Left(Failure)
-///
-/// C'est le SEUL endroit où les Exceptions deviennent
-/// des Failures. Le Domain ne voit jamais d'exceptions.
-///
-/// Flow :
-///   Provider → Usecase → Repository (ici)
-///     → try { datasource.login() }
-///       → Right(user)          ← succès
-///     → catch AuthException
-///       → Left(AuthFailure)    ← erreur typée
-///     → catch NetworkException
-///       → Left(NetworkFailure) ← pas de réseau
-/// -------------------------------------------------------
-
 import 'package:dartz/dartz.dart';
 
 import '../../../../core/errors/exceptions.dart';
@@ -43,36 +20,25 @@ class AuthRepositoryImpl implements AuthRepository {
     required String password,
   }) async {
     try {
-      final user = await _datasource.login(
-        email: email,
-        password: password,
-      );
+      final user = await _datasource.login(email: email, password: password);
       return Right(user);
     } on AuthException catch (e) {
-      // 401 — Mauvais identifiants
       return Left(AuthFailure(e.message));
     } on ForbiddenException catch (e) {
-      // 403 — Compte désactivé ou email non vérifié
-      return Left(AuthFailure(e.message));
+      // 403: email non vérifié (OTP renvoyé auto) ou compte désactivé
+      return Left(ForbiddenFailure(e.message, e.action));
     } on ValidationException catch (e) {
-      // 422 — Erreurs de validation
-      return Left(ValidationFailure(
-        message: e.message,
-        errors: e.errors,
-      ));
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
     } on RateLimitException catch (e) {
-      // 429 — Trop de tentatives
-      return Left(ServerFailure(
-        '${e.message} Réessayez dans ${e.retryAfter} secondes.',
+      return Left(RateLimitFailure(
+        message: e.message,
+        retryAfter: e.retryAfter,
       ));
     } on NetworkException catch (e) {
-      // Pas de connexion internet
       return Left(NetworkFailure(e.message));
     } on ServerException catch (e) {
-      // 500+ — Erreur serveur
       return Left(ServerFailure(e.message));
-    } catch (e) {
-      // Erreur inattendue
+    } catch (_) {
       return const Left(UnexpectedFailure());
     }
   }
@@ -96,21 +62,69 @@ class AuthRepositoryImpl implements AuthRepository {
       );
       return Right(user);
     } on ValidationException catch (e) {
-      // 422 — Email déjà utilisé, mot de passe trop court, etc.
-      return Left(ValidationFailure(
-        message: e.message,
-        errors: e.errors,
-      ));
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
     } on RateLimitException catch (e) {
-      // 429 — Trop de tentatives d'inscription
-      return Left(ServerFailure(
-        '${e.message} Réessayez dans ${e.retryAfter} secondes.',
+      return Left(RateLimitFailure(
+        message: e.message,
+        retryAfter: e.retryAfter,
       ));
     } on NetworkException catch (e) {
       return Left(NetworkFailure(e.message));
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
-    } catch (e) {
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // VERIFY OTP
+  // ═══════════════════════════════════════════════════════
+  @override
+  Future<Either<Failure, void>> verifyOtp({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      await _datasource.verifyOtp(email: email, code: code);
+      return const Right(null);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on RateLimitException catch (e) {
+      return Left(RateLimitFailure(
+        message: e.message,
+        retryAfter: e.retryAfter,
+      ));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // RESEND OTP
+  // ═══════════════════════════════════════════════════════
+  @override
+  Future<Either<Failure, void>> resendOtp({
+    required String email,
+    String type = 'register',
+  }) async {
+    try {
+      await _datasource.resendOtp(email: email, type: type);
+      return const Right(null);
+    } on RateLimitException catch (e) {
+      return Left(RateLimitFailure(
+        message: e.message,
+        retryAfter: e.retryAfter,
+      ));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
       return const Left(UnexpectedFailure());
     }
   }
@@ -123,12 +137,8 @@ class AuthRepositoryImpl implements AuthRepository {
     try {
       await _datasource.logout();
       return const Right(null);
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
-    } catch (e) {
-      // Même si le logout API échoue, le datasource
-      // nettoie toujours le storage local (dans le finally).
-      // Donc on retourne succès quand même.
+    } catch (_) {
+      // Le datasource nettoie toujours le storage local dans finally.
       return const Right(null);
     }
   }
@@ -142,18 +152,14 @@ class AuthRepositoryImpl implements AuthRepository {
       final user = await _datasource.getCurrentUser();
       return Right(user);
     } on AuthException catch (e) {
-      // 401 — Token expiré ou invalide
       return Left(AuthFailure(e.message));
     } on NetworkException catch (_) {
-      // Pas de réseau → essayer le cache local
-      final cachedUser = await _datasource.getCachedUser();
-      if (cachedUser != null) {
-        return Right(cachedUser);
-      }
+      final cached = await _datasource.getCachedUser();
+      if (cached != null) return Right(cached);
       return const Left(NetworkFailure());
     } on ServerException catch (e) {
       return Left(ServerFailure(e.message));
-    } catch (e) {
+    } catch (_) {
       return const Left(UnexpectedFailure());
     }
   }
@@ -162,7 +168,128 @@ class AuthRepositoryImpl implements AuthRepository {
   // HAS TOKEN
   // ═══════════════════════════════════════════════════════
   @override
-  Future<bool> hasToken() {
-    return _datasource.hasToken();
+  Future<bool> hasToken() => _datasource.hasToken();
+
+  // ═══════════════════════════════════════════════════════
+  // REFRESH TOKEN
+  // ═══════════════════════════════════════════════════════
+  @override
+  Future<Either<Failure, String>> refreshToken() async {
+    try {
+      final token = await _datasource.refreshToken();
+      return Right(token);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // FORGOT PASSWORD
+  // ═══════════════════════════════════════════════════════
+  @override
+  Future<Either<Failure, void>> forgotPassword({required String email}) async {
+    try {
+      await _datasource.forgotPassword(email: email);
+      return const Right(null);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on RateLimitException catch (e) {
+      return Left(RateLimitFailure(
+        message: e.message,
+        retryAfter: e.retryAfter,
+      ));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // VERIFY RESET OTP
+  // ═══════════════════════════════════════════════════════
+  @override
+  Future<Either<Failure, void>> verifyResetOtp({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      await _datasource.verifyResetOtp(email: email, code: code);
+      return const Right(null);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on RateLimitException catch (e) {
+      return Left(RateLimitFailure(
+        message: e.message,
+        retryAfter: e.retryAfter,
+      ));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // RESET PASSWORD
+  // ═══════════════════════════════════════════════════════
+  @override
+  Future<Either<Failure, void>> resetPassword({
+    required String email,
+    required String password,
+    required String passwordConfirmation,
+  }) async {
+    try {
+      await _datasource.resetPassword(
+        email: email,
+        password: password,
+        passwordConfirmation: passwordConfirmation,
+      );
+      return const Right(null);
+    } on ForbiddenException catch (e) {
+      // OTP non vérifié ou fenêtre de 10 min expirée
+      return Left(ForbiddenFailure(e.message));
+    } on NotFoundException catch (e) {
+      return Left(NotFoundFailure(e.message));
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════
+  // LOGIN WITH GOOGLE
+  // ═══════════════════════════════════════════════════════
+  @override
+  Future<Either<Failure, User>> loginWithGoogle({required String idToken}) async {
+    try {
+      final user = await _datasource.loginWithGoogle(idToken: idToken);
+      return Right(user);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on ForbiddenException catch (e) {
+      return Left(ForbiddenFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
   }
 }

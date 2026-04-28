@@ -11,8 +11,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../providers/core_providers.dart';
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
+import '../../features/auth/presentation/screens/login_screen.dart';
+import '../../features/auth/presentation/screens/register_screen.dart';
+import '../../features/auth/presentation/screens/email_verification_screen.dart';
+import '../../features/dashboard/presentation/screens/client_home_screen.dart';
 
 // ═══════════════════════════════════════════════════════
 // PATHS DES ROUTES
@@ -26,6 +31,7 @@ class AppRoutes {
   static const String onboarding = '/onboarding';
   static const String login = '/login';
   static const String register = '/register';
+  static const String verifyEmail = '/verify-email';
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
 
@@ -47,10 +53,10 @@ class AppRoutes {
   static const String adminProfile = '/admin/profile';
   static const String adminSettings = '/admin/settings';
   static const String adminAutoPilot = '/admin/auto-pilot';
-static const String adminHelp = '/admin/help';
+  static const String adminHelp = '/admin/help';
 
   // ── Client (role = client) ───────────────────────────
-static const String clientExplore = '/client/explore';  
+  static const String clientExplore = '/client/explore';
   static const String clientSearch = '/client/search';
   static const String clientCarDetail = '/client/cars/:id';
   static const String clientBookings = '/client/bookings';
@@ -60,52 +66,58 @@ static const String clientExplore = '/client/explore';
 }
 
 // ═══════════════════════════════════════════════════════
-// ROUTER PROVIDER
+// ROUTER PROVIDER (avec Riverpod)
+// ═══════════════════════════════════════════════════════
+// Clean Architecture : Le routeur est stateless et utilise Riverpod
+// pour lire l'état de l'authentification depuis les providers.
+// TODO: Remplacer isLoggedIn/userRole par authProvider.watch()
 // ═══════════════════════════════════════════════════════
 
 final routerProvider = Provider<GoRouter>((ref) {
   return GoRouter(
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: true,
+    refreshListenable: authNotifier,
 
     redirect: (context, state) {
-      // TODO: Connecter avec ton AuthProvider
-      // final authState = ref.read(authProvider);
-      // final isLoggedIn = authState.user != null;
-      // final userRole = authState.user?.role;
+      final isLoggedIn = authNotifier.isLoggedIn;
+      final userRole   = authNotifier.role;
 
-      final isLoggedIn = false; // ← Remplacer
-      final userRole = 'client'; // ← Remplacer
+      final location = state.matchedLocation;
 
-      final isAuthRoute = state.matchedLocation == AppRoutes.login ||
-          state.matchedLocation == AppRoutes.register ||
-          state.matchedLocation == AppRoutes.forgotPassword ||
-          state.matchedLocation == AppRoutes.resetPassword ||
-          state.matchedLocation == AppRoutes.onboarding;
+      // ── Listes de routes publiques (accessibles sans connexion) ──
+      const publicRoutes = [
+        AppRoutes.splash,
+        AppRoutes.onboarding,
+        AppRoutes.login,
+        AppRoutes.register,
+        AppRoutes.verifyEmail,
+        AppRoutes.forgotPassword,
+        AppRoutes.resetPassword,
+      ];
 
-      // Pas connecté → login
-      if (!isLoggedIn && !isAuthRoute && state.matchedLocation != AppRoutes.splash) {
+      // ── Si pas connecté et essaie d'accéder à une zone protégée ──
+      if (!isLoggedIn && !publicRoutes.contains(location)) {
         return AppRoutes.login;
       }
 
-      // Connecté sur page auth → rediriger selon rôle
-      if (isLoggedIn && isAuthRoute) {
+      // ── Si connecté et sur une route publique (auth) → rediriger ──
+      if (isLoggedIn &&
+          publicRoutes.contains(location) &&
+          location != AppRoutes.splash) {
         return userRole == 'admin' || userRole == 'super_admin'
             ? AppRoutes.adminDashboard
             : AppRoutes.clientExplore;
       }
 
-      // Client essaie d'aller sur admin
-      if (isLoggedIn &&
-          userRole == 'client' &&
-          state.matchedLocation.startsWith('/admin')) {
-       return AppRoutes.clientExplore;
+      // ── Permissions par rôle ──
+      if (isLoggedIn && userRole == 'client' && location.startsWith('/admin')) {
+        return AppRoutes.clientExplore;
       }
 
-      // Admin essaie d'aller sur client
       if (isLoggedIn &&
           (userRole == 'admin' || userRole == 'super_admin') &&
-          state.matchedLocation.startsWith('/client')) {
+          location.startsWith('/client')) {
         return AppRoutes.adminDashboard;
       }
 
@@ -115,28 +127,31 @@ final routerProvider = Provider<GoRouter>((ref) {
     routes: [
       // ── Splash ───────────────────────────────────────
       GoRoute(
-  path: AppRoutes.splash,
-  builder: (context, state) => const SplashScreen(),
-),
+        path: AppRoutes.splash,
+        builder: (context, state) => const SplashScreen(),
+      ),
 
       // ── Onboarding ───────────────────────────────────
       GoRoute(
-  path: AppRoutes.onboarding,
-  builder: (context, state) => const OnboardingScreen(),
-),
+        path: AppRoutes.onboarding,
+        builder: (context, state) => const OnboardingScreen(),
+      ),
 
       // ── Auth ─────────────────────────────────────────
       GoRoute(
         path: AppRoutes.login,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Login')), // ← Remplacer par LoginScreen()
-        ),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: AppRoutes.register,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Register')), // ← Remplacer
-        ),
+        builder: (context, state) => const RegisterScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.verifyEmail,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return EmailVerificationScreen(email: email);
+        },
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
@@ -154,59 +169,56 @@ final routerProvider = Provider<GoRouter>((ref) {
       // ── Admin Shell (avec bottom nav) ────────────────
       ShellRoute(
         builder: (context, state, child) {
-          return Scaffold(body: child); // ← Remplacer par AdminShell(child: child)
+          return Scaffold(
+            body: child,
+          ); // ← Remplacer par AdminShell(child: child)
         },
         routes: [
           GoRoute(
             path: AppRoutes.adminDashboard,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Dashboard')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Dashboard'))),
           ),
           GoRoute(
             path: AppRoutes.adminCars,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Cars')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Cars'))),
           ),
           GoRoute(
             path: AppRoutes.adminReservations,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Reservations')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Reservations'))),
           ),
           GoRoute(
             path: AppRoutes.adminClients,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Clients')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Clients'))),
           ),
           // MORE tab destinations
           GoRoute(
             path: AppRoutes.adminProfile,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Admin Profile')),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Admin Profile'))),
+          ),
+          GoRoute(
+            path: AppRoutes.adminAutoPilot,
+            builder: (_, _) => const Scaffold(
+              body: Center(child: Text('Auto-Pilot Settings')),
             ),
           ),
-          GoRoute(path: AppRoutes.adminAutoPilot, 
-          builder: (_, _) => const Scaffold(
-            body: Center(child: Text('Auto-Pilot Settings')),
-            ),
-            ),
-          GoRoute(path: AppRoutes.adminHelp, 
-          builder: (_, _) => const Scaffold(
-            body: Center(child: Text('Help')),
-            ),
-            ),
+          GoRoute(
+            path: AppRoutes.adminHelp,
+            builder: (_, _) =>
+                const Scaffold(body: Center(child: Text('Help'))),
+          ),
         ],
       ),
 
       // ── Admin detail routes (hors shell) ─────────────
       GoRoute(
         path: AppRoutes.adminCarAdd,
-        builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Add Car')),
-        ),
+        builder: (context, state) =>
+            const Scaffold(body: Center(child: Text('Add Car'))),
       ),
       GoRoute(
         path: '/admin/cars/:id',
@@ -229,42 +241,62 @@ final routerProvider = Provider<GoRouter>((ref) {
           return Scaffold(body: Center(child: Text('Client $id')));
         },
       ),
-      GoRoute(path: AppRoutes.adminSmartPricing, builder: (_, _) => const Scaffold(body: Center(child: Text('Smart Pricing')))),
-      GoRoute(path: AppRoutes.adminAlerts, builder: (_, _) => const Scaffold(body: Center(child: Text('Alerts')))),
-      GoRoute(path: AppRoutes.adminMaintenance, builder: (_, _) => const Scaffold(body: Center(child: Text('Maintenance')))),
-      GoRoute(path: AppRoutes.adminFinances, builder: (_, _) => const Scaffold(body: Center(child: Text('Finances')))),
-      GoRoute(path: AppRoutes.adminAnalytics, builder: (_, _) => const Scaffold(body: Center(child: Text('Analytics')))),
-      GoRoute(path: AppRoutes.adminSettings, builder: (_, _) => const Scaffold(body: Center(child: Text('Settings')))),
+      GoRoute(
+        path: AppRoutes.adminSmartPricing,
+        builder: (_, _) =>
+            const Scaffold(body: Center(child: Text('Smart Pricing'))),
+      ),
+      GoRoute(
+        path: AppRoutes.adminAlerts,
+        builder: (_, _) => const Scaffold(body: Center(child: Text('Alerts'))),
+      ),
+      GoRoute(
+        path: AppRoutes.adminMaintenance,
+        builder: (_, _) =>
+            const Scaffold(body: Center(child: Text('Maintenance'))),
+      ),
+      GoRoute(
+        path: AppRoutes.adminFinances,
+        builder: (_, _) =>
+            const Scaffold(body: Center(child: Text('Finances'))),
+      ),
+      GoRoute(
+        path: AppRoutes.adminAnalytics,
+        builder: (_, _) =>
+            const Scaffold(body: Center(child: Text('Analytics'))),
+      ),
+      GoRoute(
+        path: AppRoutes.adminSettings,
+        builder: (_, _) =>
+            const Scaffold(body: Center(child: Text('Settings'))),
+      ),
 
       // ── Client Shell (avec bottom nav) ───────────────
       ShellRoute(
         builder: (context, state, child) {
-          return Scaffold(body: child); // ← Remplacer par ClientShell(child: child)
+          return Scaffold(
+            body: child,
+          ); // ← Remplacer par ClientShell(child: child)
         },
         routes: [
           GoRoute(
             path: AppRoutes.clientExplore,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Home')),
-            ),
+            builder: (context, state) => const ClientHomeScreen(),
           ),
           GoRoute(
             path: AppRoutes.clientSearch,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Search')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Search'))),
           ),
           GoRoute(
             path: AppRoutes.clientBookings,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Bookings')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Bookings'))),
           ),
           GoRoute(
             path: AppRoutes.clientProfile,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Profile')),
-            ),
+            builder: (context, state) =>
+                const Scaffold(body: Center(child: Text('Profile'))),
           ),
         ],
       ),
@@ -294,7 +326,10 @@ final routerProvider = Provider<GoRouter>((ref) {
           children: [
             const Icon(Icons.error_outline, size: 64, color: Colors.red),
             const SizedBox(height: 16),
-            Text('Page introuvable', style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              'Page introuvable',
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             const SizedBox(height: 8),
             Text(state.matchedLocation),
           ],

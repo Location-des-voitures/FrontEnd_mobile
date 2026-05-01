@@ -21,12 +21,55 @@ import '../../features/auth/domain/usecases/verify_reset_otp_usecase.dart';
 import '../network/dio_client.dart';
 
 // ══════════════════════════════════════════════════════════
-// AUTH STATE — ChangeNotifier (router + Riverpod)
+// 🧪 MODE MOCK
+// Mettez kUseMock = false quand votre backend Laravel est prêt.
+//
+// Comptes de test :
+//   super_admin → admin@test.com   / password
+//   loueur      → loueur@test.com  / password
+//   client      → client@test.com  / password
 // ══════════════════════════════════════════════════════════
+const bool kUseMock = true;
 
-/// Remplace l'ancien mockAuthNotifier.
-/// Le router écoute cette instance via refreshListenable.
-/// Les écrans accèdent à l'état via [authNotifierProvider].
+const _mockUsers = {
+  'admin@test.com': User(
+    id: 1,
+    name: 'Super Admin',
+    email: 'admin@test.com',
+    role: 'super_admin',
+    isActive: true,
+    emailVerifiedAt: '2026-01-01T00:00:00Z',
+  ),
+  'loueur@test.com': User(
+    id: 2,
+    name: 'Ahmed Loueur',
+    email: 'loueur@test.com',
+    role: 'admin',
+    isActive: true,
+    emailVerifiedAt: '2026-01-01T00:00:00Z',
+  ),
+  'client@test.com': User(
+    id: 3,
+    name: 'Youssef Client',
+    email: 'client@test.com',
+    role: 'client',
+    isActive: true,
+    emailVerifiedAt: '2026-01-01T00:00:00Z',
+  ),
+};
+
+/// Appelé directement par LoginScreen quand kUseMock = true.
+/// Retourne le User si ok, null si mauvais identifiants.
+Future<User?> mockLogin(String email, String password) async {
+  await Future.delayed(const Duration(milliseconds: 400));
+  final user = _mockUsers[email.trim().toLowerCase()];
+  if (user == null || password != 'password') return null;
+  return user;
+}
+
+// ══════════════════════════════════════════════════════════
+// AUTH STATE
+// ══════════════════════════════════════════════════════════
 class AuthNotifier extends ChangeNotifier {
   bool _isLoggedIn = false;
   String _role = 'client';
@@ -51,13 +94,11 @@ class AuthNotifier extends ChangeNotifier {
   }
 }
 
-/// Instance globale utilisée par le router (refreshListenable).
 final authNotifier = AuthNotifier();
 
 // ══════════════════════════════════════════════════════════
 // INFRASTRUCTURE PROVIDERS
 // ══════════════════════════════════════════════════════════
-
 final secureStorageProvider = Provider<FlutterSecureStorage>((ref) {
   return const FlutterSecureStorage();
 });
@@ -69,7 +110,6 @@ final dioClientProvider = Provider<DioClient>((ref) {
 // ══════════════════════════════════════════════════════════
 // DATA LAYER PROVIDERS
 // ══════════════════════════════════════════════════════════
-
 final authDatasourceProvider = Provider<AuthRemoteDatasource>((ref) {
   return AuthRemoteDatasource(client: ref.read(dioClientProvider));
 });
@@ -81,7 +121,6 @@ final authRepositoryProvider = Provider<domain.AuthRepository>((ref) {
 // ══════════════════════════════════════════════════════════
 // USE CASE PROVIDERS
 // ══════════════════════════════════════════════════════════
-
 final loginUsecaseProvider = Provider<LoginUsecase>((ref) {
   return LoginUsecase(ref.read(authRepositoryProvider));
 });
@@ -125,9 +164,5 @@ final refreshTokenUsecaseProvider = Provider<RefreshTokenUsecase>((ref) {
 final loginWithGoogleUsecaseProvider = Provider<LoginWithGoogleUsecase>((ref) {
   return LoginWithGoogleUsecase(ref.read(authRepositoryProvider));
 });
-
-// ══════════════════════════════════════════════════════════
-// AUTH NOTIFIER PROVIDER (pour les écrans)
-// ══════════════════════════════════════════════════════════
 
 final authNotifierProvider = Provider<AuthNotifier>((ref) => authNotifier);

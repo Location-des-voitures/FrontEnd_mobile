@@ -80,7 +80,8 @@ class _UsersListScreenState extends State<UsersListScreen> {
       if (_selectedType == 'CLIENTS' && u.role != UserRole.client) return false;
       if (_selectedType == 'ADMINS' &&
           u.role != UserRole.admin &&
-          u.role != UserRole.superAdmin) return false;
+          u.role != UserRole.superAdmin &&
+          u.role != UserRole.loueur) return false;
       if (_selectedStatus == 'Active' && u.status != UserStatus.active) return false;
       if (_selectedStatus == 'Inactive' && u.status != UserStatus.inactive) return false;
       final q = _searchController.text.toLowerCase();
@@ -120,10 +121,12 @@ class _UsersListScreenState extends State<UsersListScreen> {
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+     
     );
   }
 
+  // ── Header ─────────────────────────────────────────────
+  // Modifié : supprimé l'icône recherche en haut à droite
   Widget _buildHeader() {
     return Container(
       color: Colors.white,
@@ -156,10 +159,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
             ],
           ),
           const Spacer(),
-          IconButton(
-            icon: const Icon(Icons.search, color: AppColors.textPrimary),
-            onPressed: () {},
-          ),
+          // Avatar seulement — pas d'icône recherche
           CircleAvatar(
             radius: 20,
             backgroundColor: AppColors.primary.withAlpha(30),
@@ -170,6 +170,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
     );
   }
 
+  // ── Search Bar ─────────────────────────────────────────
   Widget _buildSearchBar() {
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
@@ -214,6 +215,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
     );
   }
 
+  // ── Type Filters ───────────────────────────────────────
   Widget _buildTypeFilters() {
     return SizedBox(
       height: 42,
@@ -262,6 +264,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
     );
   }
 
+  // ── Status Filters ─────────────────────────────────────
   Widget _buildStatusFilters() {
     return SizedBox(
       height: 38,
@@ -306,6 +309,7 @@ class _UsersListScreenState extends State<UsersListScreen> {
     );
   }
 
+  // ── User List ──────────────────────────────────────────
   Widget _buildUserList() {
     final users = _filtered;
     if (users.isEmpty) {
@@ -330,15 +334,18 @@ class _UsersListScreenState extends State<UsersListScreen> {
     );
   }
 
+  // ── Bottom Nav ─────────────────────────────────────────
+  // Modifié : Dashboard / Users / Loueurs / Plans / Logs
   Widget _buildBottomNav() {
     const items = [
-      (Icons.grid_view_rounded, Icons.grid_view_rounded, 'DASHBOARD'),
-      (Icons.people_alt_outlined, Icons.people_alt, 'USERS'),
-      (Icons.directions_car_outlined, Icons.directions_car, 'LOUEURS'),
-      (Icons.person_outline, Icons.person, 'CLIENTS'),
-      (Icons.apps_rounded, Icons.apps_rounded, 'MORE'),
+      (Icons.dashboard_outlined, Icons.dashboard, 'Dashboard'),
+      (Icons.people_alt_outlined, Icons.people_alt, 'Users'),
+      (Icons.directions_car_outlined, Icons.directions_car, 'Loueurs'),
+      (Icons.credit_card_outlined, Icons.credit_card, 'Plans'),
+      (Icons.receipt_long_outlined, Icons.receipt_long, 'Logs'),
     ];
-    const activeIndex = 1;
+    const activeIndex = 1; // Users est actif
+
     return Container(
       height: 68,
       decoration: BoxDecoration(

@@ -21,6 +21,17 @@ class UserManagementRemoteDatasource {
   const UserManagementRemoteDatasource({required DioClient client})
       : _client = client;
 
+      Future<UserModel> createAdmin(UserModel user) async {
+    final response = await _client.post(
+      ApiConstants.users, // Vérifiez que cet endpoint correspond à votre API Laravel
+      data: user.toJson(),
+    );
+    
+    return UserModel.fromJson(
+      response.data['data'] as Map<String, dynamic>,
+    );
+  }
+
   Future<UserListModel> getAllUsers({UserFilters? filters}) async {
     final queryParams = <String, dynamic>{};
 

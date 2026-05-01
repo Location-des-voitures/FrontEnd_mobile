@@ -4,7 +4,7 @@ import 'user_list_screen.dart';
 
 /// Stub — à implémenter avec la maquette du profil loueur
 class UserProfileScreen extends StatelessWidget {
-  final UserListItem user;
+  final UserModel user;
   const UserProfileScreen({super.key, required this.user});
 
   @override

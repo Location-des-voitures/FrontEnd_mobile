@@ -7,7 +7,11 @@
 ///   - Client      → /api/client/profile, /api/client/cars, /api/client/reservations
 ///   - Public      → /api/auth/*, /api/email/verify/*
 /// -------------------------------------------------------
-
+import '../../features/superadmin/presentation/screens/super_admin_dashboard_screen.dart';
+import '../../features/superadmin/presentation/screens/user_list_screen.dart';
+import '../../features/superadmin/presentation/screens/subscription_management_screen.dart';
+import '../../features/superadmin/presentation/screens/system_log_screen.dart';
+import '../../features/superadmin/presentation/screens/fleet_alerts_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -63,6 +67,13 @@ class AppRoutes {
   static const String clientBookingDetail = '/client/bookings/:id';
   static const String clientBookingComplete = '/client/bookings/:id/complete';
   static const String clientProfile = '/client/profile';
+
+  //superadmin
+  static const String superAdminDashboard = '/superadmin/dashboard';
+  static const String superAdminUsers = '/superadmin/users';
+  static const String superAdminPlans = '/superadmin/plans';
+  static const String superAdminLog = '/superadmin/log';
+  static const String superAdminAlerts = '/superadmin/alerts';
 }
 
 // ═══════════════════════════════════════════════════════
@@ -81,7 +92,7 @@ final routerProvider = Provider<GoRouter>((ref) {
 
     redirect: (context, state) {
       final isLoggedIn = authNotifier.isLoggedIn;
-      final userRole   = authNotifier.role;
+      final userRole = authNotifier.role;
 
       final location = state.matchedLocation;
 
@@ -105,16 +116,20 @@ final routerProvider = Provider<GoRouter>((ref) {
       if (isLoggedIn &&
           publicRoutes.contains(location) &&
           location != AppRoutes.splash) {
-        return userRole == 'admin' || userRole == 'super_admin'
-            ? AppRoutes.adminDashboard
-            : AppRoutes.clientExplore;
+        if (userRole == 'super_admin') return AppRoutes.superAdminDashboard;
+        if (userRole == 'admin') return AppRoutes.adminDashboard;
+        return AppRoutes.clientExplore;
       }
 
       // ── Permissions par rôle ──
       if (isLoggedIn && userRole == 'client' && location.startsWith('/admin')) {
         return AppRoutes.clientExplore;
       }
-
+      if (isLoggedIn &&
+          userRole == 'super_admin' &&
+          !location.startsWith('/superadmin')) {
+        return AppRoutes.superAdminDashboard;
+      }
       if (isLoggedIn &&
           (userRole == 'admin' || userRole == 'super_admin') &&
           location.startsWith('/client')) {
@@ -125,6 +140,7 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
 
     routes: [
+      
       // ── Splash ───────────────────────────────────────
       GoRoute(
         path: AppRoutes.splash,
@@ -316,6 +332,26 @@ final routerProvider = Provider<GoRouter>((ref) {
           return Scaffold(body: Center(child: Text('Booking $id')));
         },
       ),
+      GoRoute(
+  path: AppRoutes.superAdminDashboard,
+  builder: (_, _) => const SuperAdminDashboardScreen(),
+),
+GoRoute(
+  path: AppRoutes.superAdminUsers,
+  builder: (_, _) => const UsersListScreen(),
+),
+GoRoute(
+  path: AppRoutes.superAdminPlans,
+  builder: (_, _) => const SubscriptionManagementScreen(),
+),
+GoRoute(
+  path: AppRoutes.superAdminLog,
+  builder: (_, _) => const SystemLogScreen(),
+),
+GoRoute(
+  path: AppRoutes.superAdminAlerts,
+  builder: (_, _) => const FleetAlertsScreen(),
+),
     ],
 
     // ── Page 404 ───────────────────────────────────────

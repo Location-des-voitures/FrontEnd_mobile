@@ -27,8 +27,8 @@ class CreateAdminUsecase {
       name: name,
       email: email,
       notifyVia: notifyVia,
-      password: password,
-      passwordConfirmation: passwordConfirmation,
+     password: password!,           
+  passwordConfirmation: passwordConfirmation!,
     );
   }
 }

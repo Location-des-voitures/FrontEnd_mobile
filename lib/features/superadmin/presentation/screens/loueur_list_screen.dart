@@ -112,7 +112,7 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+     
     );
   }
 

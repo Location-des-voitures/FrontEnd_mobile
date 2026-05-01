@@ -80,41 +80,7 @@ class UserManagementRepositoryImpl implements UserManagementRepository {
   // ═══════════════════════════════════════════════════════
   // CREATE ADMIN
   // ═══════════════════════════════════════════════════════
-  @override
-  Future<Either<Failure, User>> createAdmin({
-    required String name,
-    required String email,
-    required String notifyVia,
-    String? password,
-    String? passwordConfirmation,
-  }) async {
-    try {
-      final user = await _datasource.createAdmin(
-        name: name,
-        email: email,
-        notifyVia: notifyVia,
-        password: password,
-        passwordConfirmation: passwordConfirmation,
-      );
-      return Right(user);
-    } on ValidationException catch (e) {
-      // 422 — Email déjà utilisé, champs protégés, validation
-      return Left(ValidationFailure(
-        message: e.message,
-        errors: e.errors,
-      ));
-    } on AuthException catch (e) {
-      return Left(AuthFailure(e.message));
-    } on ForbiddenException catch (e) {
-      return Left(AuthFailure(e.message));
-    } on NetworkException catch (e) {
-      return Left(NetworkFailure(e.message));
-    } on ServerException catch (e) {
-      return Left(ServerFailure(e.message));
-    } catch (e) {
-      return const Left(UnexpectedFailure());
-    }
-  }
+  
 
   // ═══════════════════════════════════════════════════════
   // ACTIVATE USER
@@ -189,5 +155,11 @@ class UserManagementRepositoryImpl implements UserManagementRepository {
     } catch (e) {
       return const Left(UnexpectedFailure());
     }
+  }
+  
+  @override
+  Future<Either<Failure, User>> createAdmin({required String name, required String email, required String password, required String passwordConfirmation, String? notifyVia}) {
+    // TODO: implement createAdmin
+    throw UnimplementedError();
   }
 }

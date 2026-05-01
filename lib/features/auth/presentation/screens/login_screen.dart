@@ -6,6 +6,49 @@ import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/providers/core_providers.dart';
 import 'package:mobile/core/router/app_router.dart';
 import 'package:mobile/core/theme/app_theme.dart';
+import 'package:mobile/features/auth/domain/entities/user.dart';
+
+// ══════════════════════════════════════════════════════════
+// 🧪 MOCK CONFIG — mettre false quand le backend est prêt
+// ══════════════════════════════════════════════════════════
+const bool _kUseMock = true;
+
+// Comptes de test :  email → (User, password)
+final _mockAccounts = <String, ({User user, String password})>{
+  'admin@test.com': (
+    user: const User(
+      id: 1,
+      name: 'Super Admin',
+      email: 'admin@test.com',
+      role: 'super_admin',
+      isActive: true,
+      emailVerifiedAt: '2026-01-01T00:00:00Z',
+    ),
+    password: 'password',
+  ),
+  'loueur@test.com': (
+    user: const User(
+      id: 2,
+      name: 'Ahmed Loueur',
+      email: 'loueur@test.com',
+      role: 'admin',
+      isActive: true,
+      emailVerifiedAt: '2026-01-01T00:00:00Z',
+    ),
+    password: 'password',
+  ),
+  'client@test.com': (
+    user: const User(
+      id: 3,
+      name: 'Youssef Client',
+      email: 'client@test.com',
+      role: 'client',
+      isActive: true,
+      emailVerifiedAt: '2026-01-01T00:00:00Z',
+    ),
+    password: 'password',
+  ),
+};
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -49,6 +92,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       _errorMessage = null;
     });
 
+    // ════════════════════════════════════════════════
+    // MODE MOCK — AUCUN appel réseau, aucun usecase
+    // ════════════════════════════════════════════════
+    if (_kUseMock) {
+      await Future.delayed(const Duration(milliseconds: 500)); // simule réseau
+
+      if (!mounted) return;
+      setState(() => _isLoading = false);
+
+      final account = _mockAccounts[email.toLowerCase()];
+
+      if (account == null || account.password != password) {
+        setState(() => _errorMessage =
+            'Invalid email or password.\nTest accounts: admin@test.com / loueur@test.com / client@test.com\nPassword: password');
+        return;
+      }
+
+      // Connecte l'utilisateur → GoRouter redirige automatiquement
+      authNotifier.login(account.user);
+      return;
+    }
+
+    // ════════════════════════════════════════════════
+    // MODE RÉEL — backend Laravel requis
+    // ════════════════════════════════════════════════
     final result = await ref.read(loginUsecaseProvider)(
       email: email,
       password: password,
@@ -60,7 +128,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     result.fold(
       (failure) {
         if (failure is ForbiddenFailure) {
-          // 403 = email non vérifié (OTP renvoyé auto) ou compte désactivé
           if (failure.message.toLowerCase().contains('verif') ||
               failure.message.toLowerCase().contains('not verified')) {
             context.go(
@@ -78,9 +145,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       },
       (user) {
         authNotifier.login(user);
-        // Le router redirige automatiquement via refreshListenable
       },
     );
+  }
+
+  // Remplit les champs avec un compte de test en 1 tap
+  void _quickFill(String email) {
+    setState(() {
+      _emailController.text = email;
+      _passwordController.text = 'password';
+      _errorMessage = null;
+    });
   }
 
   @override
@@ -107,7 +182,64 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 ),
               ),
 
-              const SizedBox(height: 40),
+              // ── Bandeau test accounts (mock seulement) ──
+              if (_kUseMock) ...[
+                const SizedBox(height: 16),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFFF3CD),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: const Color(0xFFFFD700)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.science_outlined,
+                              size: 14, color: Color(0xFF856404)),
+                          SizedBox(width: 6),
+                          Text(
+                            'MODE TEST — Tap pour remplir',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: Color(0xFF856404),
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        children: [
+                          _QuickLoginChip(
+                            label: '⚡ Super Admin',
+                            email: 'admin@test.com',
+                            onTap: () => _quickFill('admin@test.com'),
+                          ),
+                          _QuickLoginChip(
+                            label: '🚗 Loueur',
+                            email: 'loueur@test.com',
+                            onTap: () => _quickFill('loueur@test.com'),
+                          ),
+                          _QuickLoginChip(
+                            label: '👤 Client',
+                            email: 'client@test.com',
+                            onTap: () => _quickFill('client@test.com'),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 32),
 
               Text(
                 'Welcome back.',
@@ -276,6 +408,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               if (_errorMessage != null) ...[
                 const SizedBox(height: 12),
                 Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(Icons.error_outline,
                         size: 14, color: AppColors.error),
@@ -305,7 +438,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         color: AppColors.textSecondary,
                       ),
                       children: [
-                        const TextSpan(text: 'Don\'t have an account? '),
+                        const TextSpan(text: "Don't have an account? "),
                         TextSpan(
                           text: 'Sign Up',
                           style: GoogleFonts.roboto(
@@ -324,7 +457,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               Row(
                 children: [
-                  Expanded(child: Divider(color: AppColors.divider, thickness: 1)),
+                  Expanded(
+                      child: Divider(color: AppColors.divider, thickness: 1)),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
@@ -337,7 +471,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                     ),
                   ),
-                  Expanded(child: Divider(color: AppColors.divider, thickness: 1)),
+                  Expanded(
+                      child: Divider(color: AppColors.divider, thickness: 1)),
                 ],
               ),
 
@@ -347,12 +482,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: () {
-                    // TODO: implement Google sign-in via google_sign_in package
-                    // then call ref.read(loginWithGoogleUsecaseProvider)(idToken: ...)
-                  },
+                  onPressed: () {},
                   style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: AppColors.divider),
+                    side: const BorderSide(color: AppColors.divider),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -360,15 +492,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Text(
-                        'GOOGLE',
-                        style: GoogleFonts.roboto(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Text(
                         'SIGN IN WITH GOOGLE',
                         style: GoogleFonts.roboto(
@@ -412,6 +535,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
               const SizedBox(height: 40),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ── Widget chip de connexion rapide ───────────────────────
+class _QuickLoginChip extends StatelessWidget {
+  final String label;
+  final String email;
+  final VoidCallback onTap;
+
+  const _QuickLoginChip({
+    required this.label,
+    required this.email,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFFD700)),
+        ),
+        child: Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Color(0xFF856404),
           ),
         ),
       ),

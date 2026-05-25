@@ -1,12 +1,7 @@
 /// CREATE ADMIN USECASE
-/// Crée un nouveau compte admin (loueur).
-/// Deux stratégies :
-///   - 'password_reset' → l'admin reçoit un lien pour créer son mdp
-///   - 'credentials'    → on lui envoie un mdp temporaire
 library;
 
 import 'package:dartz/dartz.dart';
-
 import '../../../../core/errors/failures.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../repositories/user_management_repository.dart';
@@ -23,12 +18,13 @@ class CreateAdminUsecase {
     String? password,
     String? passwordConfirmation,
   }) {
+    // ✅ Plus de null-assertion — on délègue la validation au repository
     return repository.createAdmin(
       name: name,
       email: email,
       notifyVia: notifyVia,
-     password: password!,           
-  passwordConfirmation: passwordConfirmation!,
+      password: password,
+      passwordConfirmation: passwordConfirmation,
     );
   }
 }

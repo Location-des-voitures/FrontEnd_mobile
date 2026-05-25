@@ -1,22 +1,27 @@
 import 'package:flutter/material.dart';
 import '../../../../core/theme/app_theme.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../providers/user_management_provider.dart';
 
-class AddLoueurScreen extends StatefulWidget {
+class AddLoueurScreen extends ConsumerStatefulWidget {
   const AddLoueurScreen({super.key});
 
   @override
-  State<AddLoueurScreen> createState() => _AddLoueurScreenState();
+  ConsumerState<AddLoueurScreen> createState() => _AddLoueurScreenState();
 }
-
-class _AddLoueurScreenState extends State<AddLoueurScreen> {
+class _AddLoueurScreenState extends ConsumerState<AddLoueurScreen> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
-  String _notifyMethod = 'password_reset'; // 'password_reset' | 'send_credentials'
+  final _passwordCtrl = TextEditingController();
+  final _confirmPasswordCtrl = TextEditingController();
+  String _notifyMethod = 'password_reset'; // 'password_reset' | 'credentials'
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    _confirmPasswordCtrl.dispose();
     super.dispose();
   }
 
@@ -140,16 +145,56 @@ class _AddLoueurScreenState extends State<AddLoueurScreen> {
         ),
         const SizedBox(height: 10),
         _NotifyOption(
-          value: 'send_credentials',
+          value: 'credentials',
           groupValue: _notifyMethod,
           icon: Icons.lock_outline_rounded,
           iconBg: AppColors.surfaceVariant,
           iconColor: AppColors.textSecondary,
           title: 'Send Credentials',
           description: 'You provide a temporary password. Admin receives OTP for email verification',
-          onTap: () => setState(() => _notifyMethod = 'send_credentials'),
+          onTap: () => setState(() => _notifyMethod = 'credentials'),
         ),
+        if (_notifyMethod == 'credentials') ...[
+          const SizedBox(height: 14),
+          _buildCredentialsFields(),
+        ],
       ],
+    );
+  }
+
+  Widget _buildCredentialsFields() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(AppSizes.radiusXL),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _FormField(
+            label: 'TEMPORARY PASSWORD',
+            hint: 'At least 8 characters',
+            controller: _passwordCtrl,
+            keyboardType: TextInputType.visiblePassword,
+            obscureText: true,
+          ),
+          const SizedBox(height: 20),
+          _FormField(
+            label: 'CONFIRM PASSWORD',
+            hint: 'Repeat temporary password',
+            controller: _confirmPasswordCtrl,
+            keyboardType: TextInputType.visiblePassword,
+            obscureText: true,
+          ),
+        ],
+      ),
     );
   }
 
@@ -205,54 +250,117 @@ class _AddLoueurScreenState extends State<AddLoueurScreen> {
   }
 
   // ── Create Button ──────────────────────────────────────
-  Widget _buildCreateButton() {
-    return SizedBox(
-      width: double.infinity,
-      height: AppSizes.buttonHeight,
-      child: ElevatedButton(
-        onPressed: _handleCreate,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppSizes.radiusMD),
+ Widget _buildCreateButton() {
+  // ✅ Écoute l'état du provider
+  final actionState = ref.watch(userActionsProvider);
+
+  return Column(
+    children: [
+      // Erreur serveur
+      if (actionState.hasError)
+        Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Text(
+            actionState.errorMessage!,
+            style: const TextStyle(color: AppColors.error, fontSize: 13),
+            textAlign: TextAlign.center,
           ),
-          elevation: 0,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: const [
-            Text('Create Loueur',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: Colors.white)),
-            SizedBox(width: 8),
-            Icon(Icons.person_add_outlined, color: Colors.white, size: 22),
-          ],
+
+      SizedBox(
+        width: double.infinity,
+        height: AppSizes.buttonHeight,
+        child: ElevatedButton(
+          // ✅ Désactivé pendant le chargement
+          onPressed: actionState.isLoading ? null : _handleCreate,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppColors.primary,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusMD),
+            ),
+            elevation: 0,
+          ),
+          child: actionState.isLoading
+              ? const SizedBox(
+                  width: 22, height: 22,
+                  child: CircularProgressIndicator(
+                    color: Colors.white, strokeWidth: 2.5,
+                  ),
+                )
+              : const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Create Loueur',
+                        style: TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white)),
+                    SizedBox(width: 8),
+                    Icon(Icons.person_add_outlined,
+                        color: Colors.white, size: 22),
+                  ],
+                ),
         ),
       ),
+    ],
+  );
+}
+Future<void> _handleCreate() async {
+  if (_nameCtrl.text.trim().isEmpty || _emailCtrl.text.trim().isEmpty) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Please fill in all fields'),
+        backgroundColor: AppColors.error,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusSM)),
+      ),
     );
+    return;
   }
 
-  void _handleCreate() {
-    if (_nameCtrl.text.trim().isEmpty || _emailCtrl.text.trim().isEmpty) {
+  if (_notifyMethod == 'credentials') {
+    if (_passwordCtrl.text.length < 8 ||
+        _passwordCtrl.text != _confirmPasswordCtrl.text) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please fill in all fields'),
+          content: const Text('Temporary password must match and be at least 8 characters'),
           backgroundColor: AppColors.error,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSM)),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(AppSizes.radiusSM)),
         ),
       );
       return;
     }
+  }
+
+  // ✅ Appel réel au provider
+  final success = await ref.read(userActionsProvider.notifier).createAdmin(
+    name: _nameCtrl.text.trim(),
+    email: _emailCtrl.text.trim(),
+    notifyVia: _notifyMethod,
+    password: _notifyMethod == 'credentials' ? _passwordCtrl.text : null,
+    passwordConfirmation:
+        _notifyMethod == 'credentials' ? _confirmPasswordCtrl.text : null,
+  );
+
+  if (!mounted) return;
+
+  if (success) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Loueur "${_nameCtrl.text.trim()}" created!'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusSM)),
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSizes.radiusSM)),
       ),
     );
     Navigator.pop(context);
   }
+  // Si échec → le provider a errorMessage, on l'affiche
+}
 
   // ── Bottom Nav ─────────────────────────────────────────
   Widget _buildBottomNav() {
@@ -299,12 +407,14 @@ class _FormField extends StatelessWidget {
   final String hint;
   final TextEditingController controller;
   final TextInputType keyboardType;
+  final bool obscureText;
 
   const _FormField({
     required this.label,
     required this.hint,
     required this.controller,
     this.keyboardType = TextInputType.text,
+    this.obscureText = false,
   });
 
   @override
@@ -319,6 +429,7 @@ class _FormField extends StatelessWidget {
         TextField(
           controller: controller,
           keyboardType: keyboardType,
+          obscureText: obscureText,
           style: AppTextStyles.bodyLarge.copyWith(fontSize: 16),
           decoration: InputDecoration(
             hintText: hint,

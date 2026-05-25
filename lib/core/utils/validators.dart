@@ -6,6 +6,7 @@
 ///   email    → required, email, unique
 ///   password → required, min:8, confirmed
 /// -------------------------------------------------------
+library;
 
 class Validators {
   Validators._();

@@ -1,80 +1,73 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/theme/app_theme.dart';
+import '../../../auth/domain/entities/user.dart';
+import '../../domain/repositories/user_management_repository.dart';
+import '../providers/user_management_provider.dart';
 import 'add_loueur_screen.dart';
 
-// ─── Models ─────────────────────────────────────────────
-enum LoueurStatus { active, suspended }
-
-class LoueurModel {
-  final String id;
-  final String name;
-  final String email;
-  final LoueurStatus status;
-  final int clientsCount;
-  final String joinedDate;
-
-  const LoueurModel({
-    required this.id,
-    required this.name,
-    required this.email,
-    required this.status,
-    required this.clientsCount,
-    required this.joinedDate,
-  });
-
-  String get initials {
-    final parts = name.trim().split(' ');
-    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
-    return name.substring(0, 2).toUpperCase();
-  }
-}
-
-// ─── Dummy Data ──────────────────────────────────────────
-const List<LoueurModel> _dummyLoueurs = [
-  LoueurModel(id: '1', name: 'Ahmed Rentals', email: 'ahmed@flottrack.ma',
-      status: LoueurStatus.active, clientsCount: 284, joinedDate: 'Joined Mar 2026'),
-  LoueurModel(id: '2', name: 'Sara Alami', email: 'sara@flottrack.ma',
-      status: LoueurStatus.active, clientsCount: 196, joinedDate: 'Joined Apr 2026'),
-  LoueurModel(id: '3', name: 'Atlas Auto', email: 'atlas@flottrack.ma',
-      status: LoueurStatus.active, clientsCount: 142, joinedDate: 'Joined Feb 2026'),
-  LoueurModel(id: '4', name: 'Karim Motors', email: 'karim@flottrack.ma',
-      status: LoueurStatus.suspended, clientsCount: 0, joinedDate: 'Joined Apr 2026'),
-];
-
-// ─── Screen ─────────────────────────────────────────────
-class LoueurListScreen extends StatefulWidget {
+class LoueurListScreen extends ConsumerStatefulWidget {
   const LoueurListScreen({super.key});
 
   @override
-  State<LoueurListScreen> createState() => _LoueurListScreenState();
+  ConsumerState<LoueurListScreen> createState() => _LoueurListScreenState();
 }
 
-class _LoueurListScreenState extends State<LoueurListScreen> {
+class _LoueurListScreenState extends ConsumerState<LoueurListScreen> {
   String _filter = 'All';
   final TextEditingController _searchCtrl = TextEditingController();
+  Timer? _searchDebounce;
 
-  int get _total => _dummyLoueurs.length;
-  int get _activeCount => _dummyLoueurs.where((l) => l.status == LoueurStatus.active).length;
-  int get _suspendedCount => _dummyLoueurs.where((l) => l.status == LoueurStatus.suspended).length;
-
-  List<LoueurModel> get _filtered {
-    return _dummyLoueurs.where((l) {
-      if (_filter == 'Active' && l.status != LoueurStatus.active) return false;
-      if (_filter == 'Suspended' && l.status != LoueurStatus.suspended) return false;
-      final q = _searchCtrl.text.toLowerCase();
-      if (q.isNotEmpty && !l.name.toLowerCase().contains(q) && !l.email.toLowerCase().contains(q)) return false;
-      return true;
-    }).toList();
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      ref.read(adminListProvider.notifier).loadAdmins();
+    });
   }
 
   @override
   void dispose() {
+    _searchDebounce?.cancel();
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  void _reloadAdmins() {
+    bool? isActive;
+    if (_filter == 'Active') isActive = true;
+    if (_filter == 'Suspended') isActive = false;
+
+    ref.read(adminListProvider.notifier).applyFilters(
+          UserFilters(
+            search: _searchCtrl.text.trim().isEmpty
+                ? null
+                : _searchCtrl.text.trim(),
+            isActive: isActive,
+            perPage: 20,
+          ),
+        );
+  }
+
+  Future<void> _openAddLoueur() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const AddLoueurScreen()),
+    );
+    if (mounted) {
+      ref.read(adminListProvider.notifier).refresh();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final state = ref.watch(adminListProvider);
+    final activeCount = state.users.where((u) => u.isActive).length;
+    final suspendedCount = state.users.where((u) => !u.isActive).length;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -82,24 +75,55 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
           children: [
             _buildHeader(context),
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 20),
-                    _buildStatsRow(),
-                    const SizedBox(height: 20),
-                    _buildSearchBar(),
-                    const SizedBox(height: 16),
-                    _buildFilterChips(),
-                    const SizedBox(height: 16),
-                    ..._filtered.map((l) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: _LoueurCard(loueur: l),
-                    )),
-                    const SizedBox(height: 80),
-                  ],
+              child: RefreshIndicator(
+                onRefresh: () => ref.read(adminListProvider.notifier).refresh(),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 20),
+                      _buildStatsRow(
+                        total: state.totalUsers,
+                        active: activeCount,
+                        suspended: suspendedCount,
+                      ),
+                      const SizedBox(height: 20),
+                      _buildSearchBar(),
+                      const SizedBox(height: 16),
+                      _buildFilterChips(),
+                      const SizedBox(height: 16),
+                      if (state.isLoading && state.users.isEmpty)
+                        const Padding(
+                          padding: EdgeInsets.only(top: 48),
+                          child: Center(child: CircularProgressIndicator()),
+                        )
+                      else if (state.hasError)
+                        _StateMessage(
+                          icon: Icons.error_outline,
+                          message: state.errorMessage!,
+                          actionLabel: 'Retry',
+                          onAction: () =>
+                              ref.read(adminListProvider.notifier).refresh(),
+                        )
+                      else if (state.users.isEmpty)
+                        _StateMessage(
+                          icon: Icons.badge_outlined,
+                          message: 'No loueurs found.',
+                          actionLabel: 'Add Loueur',
+                          onAction: _openAddLoueur,
+                        )
+                      else
+                        ...state.users.map(
+                          (admin) => Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: _LoueurCard(admin: admin),
+                          ),
+                        ),
+                      const SizedBox(height: 80),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -107,16 +131,13 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => Navigator.push(
-          context, MaterialPageRoute(builder: (_) => const AddLoueurScreen())),
+        onPressed: _openAddLoueur,
         backgroundColor: AppColors.primary,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
       ),
-     
     );
   }
 
-  // ── Header ─────────────────────────────────────────────
   Widget _buildHeader(BuildContext context) {
     return Container(
       color: Colors.white,
@@ -125,7 +146,11 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
-            icon: const Icon(Icons.arrow_back, color: AppColors.textPrimary, size: 22),
+            icon: const Icon(
+              Icons.arrow_back,
+              color: AppColors.textPrimary,
+              size: 22,
+            ),
             onPressed: () => Navigator.maybePop(context),
           ),
           const SizedBox(width: 2),
@@ -133,45 +158,72 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('Loueurs',
-                  style: AppTextStyles.h2.copyWith(fontSize: 22, fontWeight: FontWeight.w800)),
-              Text('FLEET MANAGERS',
-                  style: AppTextStyles.labelUppercase.copyWith(fontSize: 10, color: AppColors.textSecondary)),
+              Text(
+                'Loueurs',
+                style: AppTextStyles.h2.copyWith(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              Text(
+                'FLEET MANAGERS',
+                style: AppTextStyles.labelUppercase.copyWith(
+                  fontSize: 10,
+                  color: AppColors.textSecondary,
+                ),
+              ),
             ],
           ),
           const Spacer(),
           TextButton(
-            onPressed: () => Navigator.push(
-              context, MaterialPageRoute(builder: (_) => const AddLoueurScreen())),
-            child: const Text('Add Loueur',
-                style: TextStyle(color: AppColors.primary, fontSize: 15, fontWeight: FontWeight.w600)),
+            onPressed: _openAddLoueur,
+            child: const Text(
+              'Add Loueur',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
     );
   }
 
-  // ── Stats Row ──────────────────────────────────────────
-  Widget _buildStatsRow() {
+  Widget _buildStatsRow({
+    required int total,
+    required int active,
+    required int suspended,
+  }) {
     return Row(
       children: [
-        _StatCard(value: '$_total', label: 'Total', accentColor: null),
+        _StatCard(value: '$total', label: 'Total', accentColor: null),
         const SizedBox(width: 10),
-        _StatCard(value: '$_activeCount', label: 'Active', accentColor: AppColors.success),
+        _StatCard(value: '$active', label: 'Active', accentColor: AppColors.success),
         const SizedBox(width: 10),
-        _StatCard(value: '$_suspendedCount', label: 'Suspended', accentColor: const Color(0xFFC0392B)),
+        _StatCard(
+          value: '$suspended',
+          label: 'Suspended',
+          accentColor: const Color(0xFFC0392B),
+        ),
       ],
     );
   }
 
-  // ── Search ─────────────────────────────────────────────
   Widget _buildSearchBar() {
     return Container(
       height: 48,
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 6, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(10),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
@@ -181,7 +233,13 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
           Expanded(
             child: TextField(
               controller: _searchCtrl,
-              onChanged: (_) => setState(() {}),
+              onChanged: (_) {
+                _searchDebounce?.cancel();
+                _searchDebounce = Timer(
+                  const Duration(milliseconds: 350),
+                  _reloadAdmins,
+                );
+              },
               style: AppTextStyles.bodyMedium,
               decoration: const InputDecoration(
                 hintText: 'Search loueurs by name or email...',
@@ -199,29 +257,36 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
     );
   }
 
-  // ── Filter Chips ───────────────────────────────────────
   Widget _buildFilterChips() {
     const filters = ['All', 'Active', 'Suspended'];
     return Row(
       children: filters.map((f) {
-        final sel = _filter == f;
+        final selected = _filter == f;
         return Padding(
           padding: const EdgeInsets.only(right: 8),
           child: GestureDetector(
-            onTap: () => setState(() => _filter = f),
+            onTap: () {
+              setState(() => _filter = f);
+              _reloadAdmins();
+            },
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               decoration: BoxDecoration(
-                color: sel ? AppColors.primary : Colors.white,
+                color: selected ? AppColors.primary : Colors.white,
                 borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                border: Border.all(color: sel ? AppColors.primary : AppColors.divider),
+                border: Border.all(
+                  color: selected ? AppColors.primary : AppColors.divider,
+                ),
               ),
-              child: Text(f,
-                  style: TextStyle(
-                    fontSize: 14, fontWeight: FontWeight.w600,
-                    color: sel ? Colors.white : AppColors.textSecondary,
-                  )),
+              child: Text(
+                f,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? Colors.white : AppColors.textSecondary,
+                ),
+              ),
             ),
           ),
         );
@@ -229,71 +294,18 @@ class _LoueurListScreenState extends State<LoueurListScreen> {
     );
   }
 
-  // ── Bottom Nav ─────────────────────────────────────────
-  Widget _buildBottomNav() {
-    const items = [
-      (Icons.home_outlined, Icons.home_rounded, 'HOME'),
-      (Icons.directions_car_outlined, Icons.directions_car, 'FLEET'),
-      (Icons.badge_outlined, Icons.badge, 'LOUEURS'),
-      (Icons.calendar_today_outlined, Icons.calendar_today, 'BOOKINGS'),
-      (Icons.person_outline, Icons.person, 'PROFILE'),
-    ];
-    const activeIndex = 2;
-    return Container(
-      height: 68,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(14), blurRadius: 12, offset: const Offset(0, -2))],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(items.length, (i) {
-          final active = i == activeIndex;
-          return GestureDetector(
-            onTap: () {},
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (active)
-                  Container(
-                    width: 52, height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primary,
-                      borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                    ),
-                    child: Icon(items[i].$2, size: 22, color: Colors.white),
-                  )
-                else
-                  Icon(items[i].$1, size: 22, color: AppColors.textHint),
-                const SizedBox(height: 3),
-                if (!active)
-                  Text(items[i].$3,
-                      style: const TextStyle(
-                        fontSize: 9, fontWeight: FontWeight.w500,
-                        color: AppColors.textHint, letterSpacing: 0.5,
-                      )),
-                if (active)
-                  Text(items[i].$3,
-                      style: const TextStyle(
-                        fontSize: 9, fontWeight: FontWeight.w700,
-                        color: AppColors.primary, letterSpacing: 0.5,
-                      )),
-              ],
-            ),
-          );
-        }),
-      ),
-    );
-  }
 }
 
-// ─── Stat Card ────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   final String value;
   final String label;
   final Color? accentColor;
 
-  const _StatCard({required this.value, required this.label, required this.accentColor});
+  const _StatCard({
+    required this.value,
+    required this.label,
+    required this.accentColor,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -303,26 +315,42 @@ class _StatCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(AppSizes.radiusLG),
-          boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8, offset: const Offset(0, 2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withAlpha(8),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Stack(
           children: [
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(value,
-                    style: TextStyle(
-                      fontSize: 28, fontWeight: FontWeight.w800,
-                      color: accentColor ?? AppColors.textPrimary,
-                    )),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: accentColor ?? AppColors.textPrimary,
+                  ),
+                ),
                 const SizedBox(height: 2),
-                Text(label,
-                    style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: AppColors.textSecondary)),
+                Text(
+                  label,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    fontSize: 13,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
               ],
             ),
             if (accentColor != null)
               Positioned(
-                top: 0, bottom: 0, left: -14,
+                top: 0,
+                bottom: 0,
+                left: -14,
                 child: Container(
                   width: 4,
                   decoration: BoxDecoration(
@@ -341,42 +369,54 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ─── Loueur Card ─────────────────────────────────────────
 class _LoueurCard extends StatelessWidget {
-  final LoueurModel loueur;
+  final User admin;
 
-  const _LoueurCard({required this.loueur});
+  const _LoueurCard({required this.admin});
 
-  Color get _avatarBg => loueur.status == LoueurStatus.suspended
-      ? const Color(0xFFFAD4CC)
-      : const Color(0xFFD4DCF5);
-
-  Color get _avatarText => loueur.status == LoueurStatus.suspended
-      ? const Color(0xFFC0392B)
-      : AppColors.primary;
+  String get _initials {
+    final parts = admin.name.trim().split(RegExp(r'\s+'));
+    if (parts.length >= 2) return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    if (admin.name.length >= 2) return admin.name.substring(0, 2).toUpperCase();
+    return admin.email.substring(0, 1).toUpperCase();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final isSuspended = loueur.status == LoueurStatus.suspended;
+    final isSuspended = !admin.isActive;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(AppSizes.radiusXL),
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(8), blurRadius: 8, offset: const Offset(0, 2))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(8),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         children: [
-          // Avatar
           Container(
-            width: 54, height: 54,
+            width: 54,
+            height: 54,
             decoration: BoxDecoration(
-              color: _avatarBg,
+              color: isSuspended
+                  ? const Color(0xFFFAD4CC)
+                  : const Color(0xFFD4DCF5),
               borderRadius: BorderRadius.circular(AppSizes.radiusMD),
             ),
             child: Center(
-              child: Text(loueur.initials,
-                  style: TextStyle(color: _avatarText, fontWeight: FontWeight.w700, fontSize: 18)),
+              child: Text(
+                _initials,
+                style: TextStyle(
+                  color: isSuspended ? const Color(0xFFC0392B) : AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 18,
+                ),
+              ),
             ),
           ),
           const SizedBox(width: 14),
@@ -387,32 +427,48 @@ class _LoueurCard extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(loueur.name,
-                          style: AppTextStyles.bodyLarge.copyWith(fontWeight: FontWeight.w700, fontSize: 16),
-                          overflow: TextOverflow.ellipsis),
+                      child: Text(
+                        admin.name,
+                        style: AppTextStyles.bodyLarge.copyWith(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                     const SizedBox(width: 8),
                     _StatusBadge(isSuspended: isSuspended),
                   ],
                 ),
                 const SizedBox(height: 2),
-                Text(loueur.email,
-                    style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
-                    overflow: TextOverflow.ellipsis),
+                Text(
+                  admin.email,
+                  style: AppTextStyles.bodySmall.copyWith(fontSize: 12),
+                  overflow: TextOverflow.ellipsis,
+                ),
                 const SizedBox(height: 6),
                 Row(
                   children: [
-                    Icon(Icons.person_outline, size: 14,
-                        color: isSuspended ? AppColors.textHint : AppColors.primary),
+                    Icon(
+                      admin.emailVerified
+                          ? Icons.verified_outlined
+                          : Icons.mark_email_unread_outlined,
+                      size: 14,
+                      color: admin.emailVerified
+                          ? AppColors.success
+                          : AppColors.textHint,
+                    ),
                     const SizedBox(width: 4),
-                    Text('${loueur.clientsCount} clients',
-                        style: TextStyle(
-                          fontSize: 13, fontWeight: FontWeight.w600,
-                          color: isSuspended ? AppColors.textHint : AppColors.primary,
-                        )),
-                    const SizedBox(width: 8),
-                    Text(loueur.joinedDate,
-                        style: AppTextStyles.bodySmall.copyWith(fontSize: 12)),
+                    Text(
+                      admin.emailVerified ? 'Verified' : 'Pending verification',
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: admin.emailVerified
+                            ? AppColors.success
+                            : AppColors.textHint,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -428,12 +484,15 @@ class _LoueurCard extends StatelessWidget {
 
 class _StatusBadge extends StatelessWidget {
   final bool isSuspended;
+
   const _StatusBadge({required this.isSuspended});
 
   @override
   Widget build(BuildContext context) {
     final color = isSuspended ? const Color(0xFFC0392B) : AppColors.success;
-    final bg = isSuspended ? const Color(0xFFFAD4CC) : AppColors.success.withAlpha(25);
+    final bg = isSuspended
+        ? const Color(0xFFFAD4CC)
+        : AppColors.success.withAlpha(25);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -442,7 +501,50 @@ class _StatusBadge extends StatelessWidget {
       ),
       child: Text(
         isSuspended ? 'SUSPENDED' : 'ACTIVE',
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: color, letterSpacing: 0.3),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          color: color,
+          letterSpacing: 0.3,
+        ),
+      ),
+    );
+  }
+}
+
+class _StateMessage extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final String actionLabel;
+  final VoidCallback onAction;
+
+  const _StateMessage({
+    required this.icon,
+    required this.message,
+    required this.actionLabel,
+    required this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 48),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(icon, size: 42, color: AppColors.textHint),
+            const SizedBox(height: 12),
+            Text(
+              message,
+              style: AppTextStyles.bodyMedium.copyWith(
+                color: AppColors.textSecondary,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 12),
+            TextButton(onPressed: onAction, child: Text(actionLabel)),
+          ],
+        ),
       ),
     );
   }

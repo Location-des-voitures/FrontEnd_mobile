@@ -27,6 +27,7 @@ import '../../data/datasources/user_management_remote_datasource.dart';
 import '../../data/repositories/user_management_repository_impl.dart';
 import '../../domain/repositories/user_management_repository.dart';
 import '../../domain/usecases/get_all_users_usecase.dart';
+import '../../domain/usecases/get_admins_usecase.dart';
 import '../../domain/usecases/get_user_by_id_usecase.dart';
 import '../../domain/usecases/create_admin_usecase.dart';
 import '../../domain/usecases/activate_user_usecase.dart';
@@ -54,6 +55,10 @@ final userManagementRepositoryProvider = Provider((ref) {
 /// Usecases → dépendent de Repository
 final getAllUsersUsecaseProvider = Provider((ref) {
   return GetAllUsersUsecase(ref.read(userManagementRepositoryProvider));
+});
+
+final getAdminsUsecaseProvider = Provider((ref) {
+  return GetAdminsUsecase(ref.read(userManagementRepositoryProvider));
 });
 
 final getUserByIdUsecaseProvider = Provider((ref) {
@@ -131,6 +136,11 @@ final userListProvider =
   return UserListNotifier(ref.read(getAllUsersUsecaseProvider));
 });
 
+final adminListProvider =
+    StateNotifierProvider<AdminListNotifier, UserListState>((ref) {
+  return AdminListNotifier(ref.read(getAdminsUsecaseProvider));
+});
+
 class UserListNotifier extends StateNotifier<UserListState> {
   final GetAllUsersUsecase _getAllUsers;
 
@@ -147,8 +157,10 @@ class UserListNotifier extends StateNotifier<UserListState> {
 
     final result = await _getAllUsers(
       filters: UserFilters(
+        search: activeFilters.search,
         role: activeFilters.role,
         isActive: activeFilters.isActive,
+        emailVerified: activeFilters.emailVerified,
         perPage: activeFilters.perPage ?? 15,
         page: 1,
       ),
@@ -177,8 +189,10 @@ class UserListNotifier extends StateNotifier<UserListState> {
 
     final result = await _getAllUsers(
       filters: UserFilters(
+        search: state.filters.search,
         role: state.filters.role,
         isActive: state.filters.isActive,
+        emailVerified: state.filters.emailVerified,
         perPage: state.filters.perPage ?? 15,
         page: state.currentPage + 1,
       ),
@@ -232,6 +246,49 @@ class UserListNotifier extends StateNotifier<UserListState> {
 // ═══════════════════════════════════════════════════════
 
 /// Provider pour le détail d'un user (par ID)
+class AdminListNotifier extends StateNotifier<UserListState> {
+  final GetAdminsUsecase _getAdmins;
+
+  AdminListNotifier(this._getAdmins) : super(const UserListState());
+
+  Future<void> loadAdmins({UserFilters? filters}) async {
+    final activeFilters = filters ?? state.filters;
+
+    state = state.copyWith(isLoading: true, filters: activeFilters);
+
+    final result = await _getAdmins(
+      filters: UserFilters(
+        search: activeFilters.search,
+        isActive: activeFilters.isActive,
+        perPage: activeFilters.perPage ?? 15,
+        page: 1,
+      ),
+    );
+
+    result.fold(
+      (failure) => state = state.copyWith(
+        isLoading: false,
+        errorMessage: failure.message,
+      ),
+      (paginated) => state = state.copyWith(
+        users: paginated.users,
+        isLoading: false,
+        totalUsers: paginated.total,
+        currentPage: paginated.currentPage,
+        lastPage: paginated.lastPage,
+      ),
+    );
+  }
+
+  Future<void> refresh() async {
+    await loadAdmins(filters: state.filters);
+  }
+
+  Future<void> applyFilters(UserFilters filters) async {
+    await loadAdmins(filters: filters);
+  }
+}
+
 final userDetailProvider = FutureProvider.family<User?, int>((ref, id) async {
   final usecase = ref.read(getUserByIdUsecaseProvider);
   final result = await usecase(id);
@@ -255,6 +312,7 @@ final userActionsProvider =
     deactivateUser: ref.read(deactivateUserUsecaseProvider),
     deleteUser: ref.read(deleteUserUsecaseProvider),
     listNotifier: ref.read(userListProvider.notifier),
+    adminListNotifier: ref.read(adminListProvider.notifier),
   );
 });
 
@@ -306,6 +364,7 @@ class UserActionsNotifier extends StateNotifier<UserActionState> {
   final DeactivateUserUsecase _deactivateUser;
   final DeleteUserUsecase _deleteUser;
   final UserListNotifier _listNotifier;
+  final AdminListNotifier _adminListNotifier;
 
   UserActionsNotifier({
     required CreateAdminUsecase createAdmin,
@@ -313,11 +372,13 @@ class UserActionsNotifier extends StateNotifier<UserActionState> {
     required DeactivateUserUsecase deactivateUser,
     required DeleteUserUsecase deleteUser,
     required UserListNotifier listNotifier,
+    required AdminListNotifier adminListNotifier,
   })  : _createAdmin = createAdmin,
         _activateUser = activateUser,
         _deactivateUser = deactivateUser,
         _deleteUser = deleteUser,
         _listNotifier = listNotifier,
+        _adminListNotifier = adminListNotifier,
         super(const UserActionState());
 
   /// Réinitialiser l'état (avant une nouvelle action)
@@ -364,6 +425,7 @@ class UserActionsNotifier extends StateNotifier<UserActionState> {
         );
         // Rafraîchir la liste
         _listNotifier.refresh();
+        _adminListNotifier.refresh();
         return true;
       },
     );

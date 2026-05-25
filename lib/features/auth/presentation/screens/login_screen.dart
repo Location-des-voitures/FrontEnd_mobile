@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:mobile/core/errors/failures.dart';
 import 'package:mobile/core/providers/core_providers.dart';
 import 'package:mobile/core/router/app_router.dart';
@@ -11,7 +13,10 @@ import 'package:mobile/features/auth/domain/entities/user.dart';
 // ══════════════════════════════════════════════════════════
 // 🧪 MOCK CONFIG — mettre false quand le backend est prêt
 // ══════════════════════════════════════════════════════════
-const bool _kUseMock = true;
+const bool _kUseMock = false;
+const String _googleWebClientId = String.fromEnvironment(
+  'GOOGLE_WEB_CLIENT_ID',
+);
 
 // Comptes de test :  email → (User, password)
 final _mockAccounts = <String, ({User user, String password})>{
@@ -104,8 +109,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final account = _mockAccounts[email.toLowerCase()];
 
       if (account == null || account.password != password) {
-        setState(() => _errorMessage =
-            'Invalid email or password.\nTest accounts: admin@test.com / loueur@test.com / client@test.com\nPassword: password');
+        setState(
+          () => _errorMessage =
+              'Invalid email or password.\nTest accounts: admin@test.com / loueur@test.com / client@test.com\nPassword: password',
+        );
         return;
       }
 
@@ -137,8 +144,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             setState(() => _errorMessage = failure.message);
           }
         } else if (failure is RateLimitFailure) {
-          setState(() => _errorMessage =
-              '${failure.message} Retry in ${failure.retryAfter}s.');
+          setState(
+            () => _errorMessage =
+                '${failure.message} Retry in ${failure.retryAfter}s.',
+          );
         } else {
           setState(() => _errorMessage = failure.message);
         }
@@ -147,6 +156,60 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         authNotifier.login(user);
       },
     );
+  }
+
+  Future<void> _loginWithGoogle() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      if (kIsWeb && _googleWebClientId.isEmpty) {
+        setState(() {
+          _errorMessage =
+              'Google Web Client ID is missing. Launch with --dart-define=GOOGLE_WEB_CLIENT_ID=your-client-id.apps.googleusercontent.com';
+        });
+        return;
+      }
+
+      final googleSignIn = GoogleSignIn(
+        clientId: kIsWeb ? _googleWebClientId : null,
+        scopes: const ['email', 'profile'],
+      );
+
+      final account = await googleSignIn.signIn();
+      if (account == null) return;
+
+      final auth = await account.authentication;
+      final idToken = auth.idToken;
+
+      if (idToken == null || idToken.isEmpty) {
+        setState(() {
+          _errorMessage = 'Google did not return an ID token.';
+        });
+        return;
+      }
+
+      final result = await ref.read(loginWithGoogleUsecaseProvider)(
+        idToken: idToken,
+      );
+
+      if (!mounted) return;
+      result.fold(
+        (failure) => setState(() => _errorMessage = failure.message),
+        (user) => authNotifier.login(user),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Google sign-in failed: $e';
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   // Remplit les champs avec un compte de test en 1 tap
@@ -198,8 +261,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.science_outlined,
-                              size: 14, color: Color(0xFF856404)),
+                          Icon(
+                            Icons.science_outlined,
+                            size: 14,
+                            color: Color(0xFF856404),
+                          ),
                           SizedBox(width: 6),
                           Text(
                             'MODE TEST — Tap pour remplir',
@@ -410,8 +476,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.error_outline,
-                        size: 14, color: AppColors.error),
+                    const Icon(
+                      Icons.error_outline,
+                      size: 14,
+                      color: AppColors.error,
+                    ),
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
@@ -458,7 +527,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Row(
                 children: [
                   Expanded(
-                      child: Divider(color: AppColors.divider, thickness: 1)),
+                    child: Divider(color: AppColors.divider, thickness: 1),
+                  ),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text(
@@ -472,7 +542,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                   Expanded(
-                      child: Divider(color: AppColors.divider, thickness: 1)),
+                    child: Divider(color: AppColors.divider, thickness: 1),
+                  ),
                 ],
               ),
 
@@ -482,7 +553,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 width: double.infinity,
                 height: 56,
                 child: OutlinedButton(
-                  onPressed: () {},
+                  onPressed: _isLoading ? null : _loginWithGoogle,
                   style: OutlinedButton.styleFrom(
                     side: const BorderSide(color: AppColors.divider),
                     shape: RoundedRectangleBorder(
@@ -508,30 +579,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               const SizedBox(height: 60),
 
               Center(
-                child: Column(
-                  children: [
-                    Text(
-                      'FlotTrack',
-                      style: GoogleFonts.roboto(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w300,
-                        color: const Color.fromARGB(255, 12, 89, 222),
-                        letterSpacing: -1,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'KINETIC GALLERY & CONCIERGE',
-                      style: GoogleFonts.roboto(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w500,
-                        letterSpacing: 2,
-                        color: AppColors.textHint,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+  child: Image.asset(
+    'assets/images/devunivers-logo.png',
+    height: 90,
+  ),
+),
 
               const SizedBox(height: 40),
             ],

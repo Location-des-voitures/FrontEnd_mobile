@@ -9,6 +9,7 @@
 ///   context.screenWidth   → largeur de l'écran
 ///   DateTime.now().isToday → true
 /// -------------------------------------------------------
+library;
 
 import 'package:flutter/material.dart';
 

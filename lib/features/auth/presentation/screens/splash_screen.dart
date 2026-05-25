@@ -21,7 +21,7 @@ class SplashScreen extends StatelessWidget {
           // ── Image de fond ────────────────────────────
           Positioned.fill(
             child: Image.asset(
-              'assets/images/WhatsApp Image 2026-04-20 at 23.20.59.jpeg',
+              'assets/images/Buggati.jpg',
               fit: BoxFit.cover,
             ),
           ),
@@ -65,20 +65,20 @@ class SplashScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 16),
 
-                  // Logo "rRw"
+                
                  FittedBox(
-  fit: BoxFit.scaleDown,
-  child: Text(
-    'FlotTrack',
-    style: GoogleFonts.roboto(
-      fontSize: 80,
-      fontWeight: FontWeight.w700,
-      letterSpacing: -2,
-      color: const Color(0xFFB8B8D4).withValues(alpha: 0.8),
-      height: 0.9,
-    ),
-  ),
-),
+                 fit: BoxFit.scaleDown,
+                 child: Text(
+                 'FlotTrack',
+                 style: GoogleFonts.roboto(
+                 fontSize: 80,
+                 fontWeight: FontWeight.w700,
+                   letterSpacing: -2,
+                 color: const Color(0xFFB8B8D4).withValues(alpha: 0.8),
+                 height: 0.9,
+                   ),
+                  ),
+                     ),
 
                   // "THE OBSIDIAN GALLERY"
                   Text(
@@ -91,7 +91,7 @@ class SplashScreen extends StatelessWidget {
                     ),
                   ),
 
-                  const Spacer(flex: 5),
+                  
 
                   // ── Bouton "GET STARTED" ─────────────
                   SizedBox(
@@ -126,60 +126,68 @@ class SplashScreen extends StatelessWidget {
 
                   // ── Footer ───────────────────────────
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Gauche : PRECISION / Machined
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'PRECISION',
-                            style: GoogleFonts.roboto(
-                              fontSize: 7,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: 3,
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'Machined',
-                            style: GoogleFonts.roboto(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w400,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ),
-                        ],
-                      ),
-                      // Droite : EST. / MMXXIV
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            'EST.',
-                            style: GoogleFonts.roboto(
-                              fontSize: 7,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: 3,
-                              color: Colors.white.withValues(alpha: 0.2),
-                            ),
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            'MMXXIV',
-                            style: GoogleFonts.roboto(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w400,
-                              letterSpacing: 2,
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                 Column(
+                 crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                      Text(
+          'POWERED BY',
+          style: GoogleFonts.roboto(
+            fontSize: 7,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 3,
+            color: Colors.white.withValues(alpha: 0.2),
+          ),
+        ),
+        const SizedBox(height: 3),
+  RichText(
+  text: TextSpan(
+    style: GoogleFonts.roboto(
+      fontSize: 14,                    // légèrement plus grand
+      fontWeight: FontWeight.w700,     // plus gras
+      fontStyle: FontStyle.italic,
+    ),
+    children: const [
+      TextSpan(
+        text: 'Dev',
+        style: TextStyle(color: Color(0xFF1A2B4A)),
+      ),
+      TextSpan(
+        text: 'Univers',
+        style: TextStyle(color: Color(0xFF2E8B6E)),
+      ),
+    ],
+  ),
+),
+      ],
+    ),
+    Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(
+          'EST.',
+          style: GoogleFonts.roboto(
+            fontSize: 7,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 3,
+            color: Colors.white.withValues(alpha: 0.2),
+          ),
+        ),
+        const SizedBox(height: 3),
+        Text(
+          'MMXXIV',
+          style: GoogleFonts.roboto(
+            fontSize: 11,
+            fontWeight: FontWeight.w400,
+            letterSpacing: 2,
+            color: Colors.white.withValues(alpha: 0.3),
+          ),
+        ),
+      ],
+    ),
+  ],
+),
 
                   const SizedBox(height: 16),
                 ],

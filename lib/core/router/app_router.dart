@@ -1,87 +1,93 @@
-/// --------------------------------------------------
-///  APP ROUTER — Aligné sur API_DOCUMENTATION v2.0
 /// -------------------------------------------------------
-/// Routes basées sur la Role Access Matrix de l'API :
-///   - Super Admin → /api/users, /api/admins
-///   - Admin       → /api/admin/dashboard, /api/admin/clients
-///   - Client      → /api/client/profile, /api/client/cars, /api/client/reservations
-///   - Public      → /api/auth/*, /api/email/verify/*
+///  APP ROUTER — FlotTrack
 /// -------------------------------------------------------
-import '../../features/superadmin/presentation/screens/super_admin_dashboard_screen.dart';
-import '../../features/superadmin/presentation/screens/user_list_screen.dart';
-import '../../features/superadmin/presentation/screens/subscription_management_screen.dart';
-import '../../features/superadmin/presentation/screens/system_log_screen.dart';
-import '../../features/superadmin/presentation/screens/fleet_alerts_screen.dart';
+library;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+
 import '../providers/core_providers.dart';
+
+// ── Auth screens ─────────────────────────────────────────
 import '../../features/auth/presentation/screens/splash_screen.dart';
 import '../../features/auth/presentation/screens/onboarding_screen.dart';
 import '../../features/auth/presentation/screens/login_screen.dart';
 import '../../features/auth/presentation/screens/register_screen.dart';
 import '../../features/auth/presentation/screens/email_verification_screen.dart';
+
+// ── Admin screens ─────────────────────────────────────────
+import '../../features/admin/presentation/widgets/admin_shell.dart';
+import '../../features/admin/presentation/screens/admin_dashboard_screen.dart';
+import '../../features/admin/presentation/screens/car_list_screen.dart';
+import '../../features/admin/presentation/screens/car_detail_screen.dart';
+import '../../features/admin/presentation/screens/car_form_screen.dart';
+import '../../features/admin/presentation/screens/reservation_list_screen.dart';
+import '../../features/admin/presentation/screens/reservation_detail_screen.dart';
+import '../../features/admin/presentation/screens/client_list_screen.dart';
+import '../../features/admin/presentation/screens/client_detail_screen.dart';
+import '../../features/admin/presentation/screens/finances_screen.dart';
+import '../../features/admin/presentation/screens/analytics_screen.dart';
+import '../../features/admin/presentation/screens/admin_profile_screen.dart';
+
+// ── Super Admin screens ───────────────────────────────────
+import '../../features/superadmin/presentation/screens/super_admin_dashboard_screen.dart';
+import '../../features/superadmin/presentation/screens/user_list_screen.dart';
+import '../../features/superadmin/presentation/screens/subscription_management_screen.dart';
+import '../../features/superadmin/presentation/screens/system_log_screen.dart';
+import '../../features/superadmin/presentation/screens/fleet_alerts_screen.dart';
+
+// ── Client screens ────────────────────────────────────────
 import '../../features/dashboard/presentation/screens/client_home_screen.dart';
 
 // ═══════════════════════════════════════════════════════
-// PATHS DES ROUTES
+// ROUTE PATHS
 // ═══════════════════════════════════════════════════════
 
 class AppRoutes {
   AppRoutes._();
 
-  // ── Onboarding & Auth (Public) ───────────────────────
-  static const String splash = '/';
-  static const String onboarding = '/onboarding';
-  static const String login = '/login';
-  static const String register = '/register';
-  static const String verifyEmail = '/verify-email';
-  static const String forgotPassword = '/forgot-password';
-  static const String resetPassword = '/reset-password';
+  // ── Public ────────────────────────────────────────────
+  static const String splash          = '/';
+  static const String onboarding      = '/onboarding';
+  static const String login           = '/login';
+  static const String register        = '/register';
+  static const String verifyEmail     = '/verify-email';
+  static const String forgotPassword  = '/forgot-password';
+  static const String resetPassword   = '/reset-password';
 
-  // ── Admin (role = admin) ─────────────────────────────
-  static const String adminDashboard = '/admin/dashboard';
-  static const String adminCars = '/admin/cars';
-  static const String adminCarAdd = '/admin/cars/add';
-  static const String adminCarEdit = '/admin/cars/:id/edit';
-  static const String adminCarDetail = '/admin/cars/:id';
+  // ── Admin ─────────────────────────────────────────────
+  static const String adminDashboard    = '/admin/dashboard';
+  static const String adminCars         = '/admin/cars';
+  static const String adminCarAdd       = '/admin/cars/add';
   static const String adminReservations = '/admin/reservations';
-  static const String adminReservationDetail = '/admin/reservations/:id';
-  static const String adminClients = '/admin/clients';
-  static const String adminClientDetail = '/admin/clients/:id';
+  static const String adminClients      = '/admin/clients';
+  static const String adminProfile      = '/admin/profile';
   static const String adminSmartPricing = '/admin/pricing';
-  static const String adminAlerts = '/admin/alerts';
-  static const String adminMaintenance = '/admin/maintenance';
-  static const String adminFinances = '/admin/finances';
-  static const String adminAnalytics = '/admin/analytics';
-  static const String adminProfile = '/admin/profile';
-  static const String adminSettings = '/admin/settings';
-  static const String adminAutoPilot = '/admin/auto-pilot';
-  static const String adminHelp = '/admin/help';
+  static const String adminAlerts       = '/admin/alerts';
+  static const String adminMaintenance  = '/admin/maintenance';
+  static const String adminFinances     = '/admin/finances';
+  static const String adminAnalytics    = '/admin/analytics';
+  static const String adminSettings     = '/admin/settings';
+  static const String adminAutoPilot    = '/admin/auto-pilot';
+  static const String adminHelp         = '/admin/help';
 
-  // ── Client (role = client) ───────────────────────────
-  static const String clientExplore = '/client/explore';
-  static const String clientSearch = '/client/search';
-  static const String clientCarDetail = '/client/cars/:id';
-  static const String clientBookings = '/client/bookings';
-  static const String clientBookingDetail = '/client/bookings/:id';
-  static const String clientBookingComplete = '/client/bookings/:id/complete';
-  static const String clientProfile = '/client/profile';
+  // ── Client ────────────────────────────────────────────
+  static const String clientExplore       = '/client/explore';
+  static const String clientSearch        = '/client/search';
+  static const String clientBookings      = '/client/bookings';
+  static const String clientProfile       = '/client/profile';
 
-  //superadmin
+  // ── Super Admin ───────────────────────────────────────
   static const String superAdminDashboard = '/superadmin/dashboard';
-  static const String superAdminUsers = '/superadmin/users';
-  static const String superAdminPlans = '/superadmin/plans';
-  static const String superAdminLog = '/superadmin/log';
-  static const String superAdminAlerts = '/superadmin/alerts';
+  static const String superAdminUsers     = '/superadmin/users';
+  static const String superAdminPlans     = '/superadmin/plans';
+  static const String superAdminLog       = '/superadmin/log';
+  static const String superAdminAlerts    = '/superadmin/alerts';
 }
 
 // ═══════════════════════════════════════════════════════
-// ROUTER PROVIDER (avec Riverpod)
-// ═══════════════════════════════════════════════════════
-// Clean Architecture : Le routeur est stateless et utilise Riverpod
-// pour lire l'état de l'authentification depuis les providers.
-// TODO: Remplacer isLoggedIn/userRole par authProvider.watch()
+// ROUTER PROVIDER
 // ═══════════════════════════════════════════════════════
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -90,13 +96,12 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     refreshListenable: authNotifier,
 
+    // ── Redirect logic ──────────────────────────────────
     redirect: (context, state) {
       final isLoggedIn = authNotifier.isLoggedIn;
-      final userRole = authNotifier.role;
+      final userRole   = authNotifier.role;
+      final location   = state.matchedLocation;
 
-      final location = state.matchedLocation;
-
-      // ── Listes de routes publiques (accessibles sans connexion) ──
       const publicRoutes = [
         AppRoutes.splash,
         AppRoutes.onboarding,
@@ -107,29 +112,33 @@ final routerProvider = Provider<GoRouter>((ref) {
         AppRoutes.resetPassword,
       ];
 
-      // ── Si pas connecté et essaie d'accéder à une zone protégée ──
+      // Non connecté → login
       if (!isLoggedIn && !publicRoutes.contains(location)) {
         return AppRoutes.login;
       }
 
-      // ── Si connecté et sur une route publique (auth) → rediriger ──
+      // Connecté + route publique → home selon rôle
       if (isLoggedIn &&
           publicRoutes.contains(location) &&
           location != AppRoutes.splash) {
         if (userRole == 'super_admin') return AppRoutes.superAdminDashboard;
-        if (userRole == 'admin') return AppRoutes.adminDashboard;
+        if (userRole == 'admin')       return AppRoutes.adminDashboard;
         return AppRoutes.clientExplore;
       }
 
-      // ── Permissions par rôle ──
-      if (isLoggedIn && userRole == 'client' && location.startsWith('/admin')) {
+      // Client → ne peut pas accéder à /admin
+      if (isLoggedIn && userRole == 'client' &&
+          location.startsWith('/admin')) {
         return AppRoutes.clientExplore;
       }
-      if (isLoggedIn &&
-          userRole == 'super_admin' &&
+
+      // Super admin → redirige vers /superadmin
+      if (isLoggedIn && userRole == 'super_admin' &&
           !location.startsWith('/superadmin')) {
         return AppRoutes.superAdminDashboard;
       }
+
+      // Admin/superadmin → ne peut pas accéder à /client
       if (isLoggedIn &&
           (userRole == 'admin' || userRole == 'super_admin') &&
           location.startsWith('/client')) {
@@ -140,20 +149,19 @@ final routerProvider = Provider<GoRouter>((ref) {
     },
 
     routes: [
-      
-      // ── Splash ───────────────────────────────────────
+
+      // ════════════════════════════════════════════════
+      // PUBLIC ROUTES
+      // ════════════════════════════════════════════════
+
       GoRoute(
         path: AppRoutes.splash,
         builder: (context, state) => const SplashScreen(),
       ),
-
-      // ── Onboarding ───────────────────────────────────
       GoRoute(
         path: AppRoutes.onboarding,
         builder: (context, state) => const OnboardingScreen(),
       ),
-
-      // ── Auth ─────────────────────────────────────────
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginScreen(),
@@ -172,128 +180,134 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Forgot Password')), // ← Remplacer
+          body: Center(child: Text('Forgot Password')),
         ),
       ),
       GoRoute(
         path: AppRoutes.resetPassword,
         builder: (context, state) => const Scaffold(
-          body: Center(child: Text('Reset Password')), // ← Remplacer
+          body: Center(child: Text('Reset Password')),
         ),
       ),
 
-      // ── Admin Shell (avec bottom nav) ────────────────
+      // ════════════════════════════════════════════════
+      // ADMIN — SHELL (tabs avec bottom nav)
+      // ════════════════════════════════════════════════
+
       ShellRoute(
-        builder: (context, state, child) {
-          return Scaffold(
-            body: child,
-          ); // ← Remplacer par AdminShell(child: child)
-        },
+        builder: (context, state, child) => AdminShell(child: child),
         routes: [
           GoRoute(
             path: AppRoutes.adminDashboard,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Dashboard'))),
+            builder: (context, state) => const AdminDashboardScreen(),
           ),
           GoRoute(
             path: AppRoutes.adminCars,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Cars'))),
+            builder: (context, state) => const CarListScreen(),
           ),
           GoRoute(
             path: AppRoutes.adminReservations,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Reservations'))),
+            builder: (context, state) => const ReservationListScreen(),
           ),
           GoRoute(
             path: AppRoutes.adminClients,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Clients'))),
+            builder: (context, state) => const ClientListScreen(),
           ),
-          // MORE tab destinations
           GoRoute(
             path: AppRoutes.adminProfile,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Admin Profile'))),
+            builder: (context, state) => const AdminProfileScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.adminFinances,
+            builder: (context, state) => const FinancesScreen(),
+          ),
+          GoRoute(
+            path: AppRoutes.adminAnalytics,
+            builder: (context, state) => const AnalyticsScreen(),
           ),
           GoRoute(
             path: AppRoutes.adminAutoPilot,
-            builder: (_, _) => const Scaffold(
-              body: Center(child: Text('Auto-Pilot Settings')),
+            builder: (context, state) => const Scaffold(
+              body: Center(child: Text('Auto-Pilot — coming soon')),
             ),
           ),
           GoRoute(
             path: AppRoutes.adminHelp,
-            builder: (_, _) =>
-                const Scaffold(body: Center(child: Text('Help'))),
+            builder: (context, state) => const Scaffold(
+              body: Center(child: Text('Help — coming soon')),
+            ),
           ),
         ],
       ),
 
-      // ── Admin detail routes (hors shell) ─────────────
+      // ════════════════════════════════════════════════
+      // ADMIN — DETAIL ROUTES (hors shell)
+      // ════════════════════════════════════════════════
+
       GoRoute(
         path: AppRoutes.adminCarAdd,
-        builder: (context, state) =>
-            const Scaffold(body: Center(child: Text('Add Car'))),
+        builder: (context, state) => const CarFormScreen(),
+      ),
+      GoRoute(
+        path: '/admin/cars/:id/edit',
+        builder: (context, state) {
+          // Passe la voiture via state.extra si besoin
+          // final car = state.extra as Car?;
+          return const CarFormScreen();
+        },
       ),
       GoRoute(
         path: '/admin/cars/:id',
         builder: (context, state) {
           final carId = int.parse(state.pathParameters['id']!);
-          return Scaffold(body: Center(child: Text('Car $carId')));
+          return CarDetailScreen(carId: carId);
         },
       ),
       GoRoute(
         path: '/admin/reservations/:id',
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
-          return Scaffold(body: Center(child: Text('Reservation $id')));
+          return ReservationDetailScreen(reservationId: id);
         },
       ),
       GoRoute(
         path: '/admin/clients/:id',
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
-          return Scaffold(body: Center(child: Text('Client $id')));
+          return ClientDetailScreen(clientId: id);
         },
       ),
       GoRoute(
         path: AppRoutes.adminSmartPricing,
-        builder: (_, _) =>
-            const Scaffold(body: Center(child: Text('Smart Pricing'))),
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('Smart Pricing — coming soon')),
+        ),
       ),
       GoRoute(
         path: AppRoutes.adminAlerts,
-        builder: (_, _) => const Scaffold(body: Center(child: Text('Alerts'))),
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('Alerts — coming soon')),
+        ),
       ),
       GoRoute(
         path: AppRoutes.adminMaintenance,
-        builder: (_, _) =>
-            const Scaffold(body: Center(child: Text('Maintenance'))),
-      ),
-      GoRoute(
-        path: AppRoutes.adminFinances,
-        builder: (_, _) =>
-            const Scaffold(body: Center(child: Text('Finances'))),
-      ),
-      GoRoute(
-        path: AppRoutes.adminAnalytics,
-        builder: (_, _) =>
-            const Scaffold(body: Center(child: Text('Analytics'))),
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('Maintenance — coming soon')),
+        ),
       ),
       GoRoute(
         path: AppRoutes.adminSettings,
-        builder: (_, _) =>
-            const Scaffold(body: Center(child: Text('Settings'))),
+        builder: (context, state) => const Scaffold(
+          body: Center(child: Text('Settings — coming soon')),
+        ),
       ),
 
-      // ── Client Shell (avec bottom nav) ───────────────
+      // ════════════════════════════════════════════════
+      // CLIENT — SHELL
+      // ════════════════════════════════════════════════
+
       ShellRoute(
-        builder: (context, state, child) {
-          return Scaffold(
-            body: child,
-          ); // ← Remplacer par ClientShell(child: child)
-        },
+        builder: (context, state, child) => Scaffold(body: child),
         routes: [
           GoRoute(
             path: AppRoutes.clientExplore,
@@ -301,23 +315,29 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.clientSearch,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Search'))),
+            builder: (context, state) => const Scaffold(
+              body: Center(child: Text('Search — coming soon')),
+            ),
           ),
           GoRoute(
             path: AppRoutes.clientBookings,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Bookings'))),
+            builder: (context, state) => const Scaffold(
+              body: Center(child: Text('Bookings — coming soon')),
+            ),
           ),
           GoRoute(
             path: AppRoutes.clientProfile,
-            builder: (context, state) =>
-                const Scaffold(body: Center(child: Text('Profile'))),
+            builder: (context, state) => const Scaffold(
+              body: Center(child: Text('Profile — coming soon')),
+            ),
           ),
         ],
       ),
 
-      // ── Client detail routes (hors shell) ────────────
+      // ════════════════════════════════════════════════
+      // CLIENT — DETAIL ROUTES (hors shell)
+      // ════════════════════════════════════════════════
+
       GoRoute(
         path: '/client/cars/:id',
         builder: (context, state) {
@@ -332,29 +352,34 @@ final routerProvider = Provider<GoRouter>((ref) {
           return Scaffold(body: Center(child: Text('Booking $id')));
         },
       ),
+
+      // ════════════════════════════════════════════════
+      // SUPER ADMIN
+      // ════════════════════════════════════════════════
+
       GoRoute(
-  path: AppRoutes.superAdminDashboard,
-  builder: (_, _) => const SuperAdminDashboardScreen(),
-),
-GoRoute(
-  path: AppRoutes.superAdminUsers,
-  builder: (_, _) => const UsersListScreen(),
-),
-GoRoute(
-  path: AppRoutes.superAdminPlans,
-  builder: (_, _) => const SubscriptionManagementScreen(),
-),
-GoRoute(
-  path: AppRoutes.superAdminLog,
-  builder: (_, _) => const SystemLogScreen(),
-),
-GoRoute(
-  path: AppRoutes.superAdminAlerts,
-  builder: (_, _) => const FleetAlertsScreen(),
-),
+        path: AppRoutes.superAdminDashboard,
+        builder: (context, state) => const SuperAdminDashboardScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.superAdminUsers,
+        builder: (context, state) => const UsersListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.superAdminPlans,
+        builder: (context, state) => const SubscriptionManagementScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.superAdminLog,
+        builder: (context, state) => const SystemLogScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.superAdminAlerts,
+        builder: (context, state) => const FleetAlertsScreen(),
+      ),
     ],
 
-    // ── Page 404 ───────────────────────────────────────
+    // ── 404 ─────────────────────────────────────────────
     errorBuilder: (context, state) => Scaffold(
       body: Center(
         child: Column(

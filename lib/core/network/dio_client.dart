@@ -12,6 +12,7 @@
 ///   429 → RateLimitException (avec retry_after)
 ///   500 → ServerException
 /// -------------------------------------------------------
+library;
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -85,6 +86,21 @@ class DioClient {
     }
   }
 
+  Future<Response<List<int>>> getBytes(
+    String path, {
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      return await _dio.get<List<int>>(
+        path,
+        queryParameters: queryParameters,
+        options: Options(responseType: ResponseType.bytes),
+      );
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   Future<Response> post(
     String path, {
     dynamic data,
@@ -104,6 +120,18 @@ class DioClient {
   }) async {
     try {
       return await _dio.put(path, data: data, queryParameters: queryParameters);
+    } on DioException catch (e) {
+      throw _handleError(e);
+    }
+  }
+
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+  }) async {
+    try {
+      return await _dio.patch(path, data: data, queryParameters: queryParameters);
     } on DioException catch (e) {
       throw _handleError(e);
     }

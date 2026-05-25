@@ -35,7 +35,6 @@ class FleetAlertsScreen extends StatelessWidget {
   const FleetAlertsScreen({super.key});
 
   static const List<FleetAlert> _alerts = [
-    // Critical
     FleetAlert(
       id: '1',
       severity: AlertSeverity.critical,
@@ -57,7 +56,6 @@ class FleetAlertsScreen extends StatelessWidget {
       actionRoute: '/superadmin/subscriptions',
       icon: Icons.alarm,
     ),
-    // Warning
     FleetAlert(
       id: '3',
       severity: AlertSeverity.warning,
@@ -68,7 +66,6 @@ class FleetAlertsScreen extends StatelessWidget {
       actionRoute: '/superadmin/subscriptions',
       icon: Icons.calendar_today_outlined,
     ),
-    // Info
     FleetAlert(
       id: '4',
       severity: AlertSeverity.info,
@@ -96,26 +93,19 @@ class FleetAlertsScreen extends StatelessWidget {
     return Scaffold(
       body: Column(
         children: [
-          // Gradient header
           _GradientHeader(unreadCount: _alerts.where((a) => a.isUnread).length),
-
-          // Scrollable body
           Expanded(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Summary row
                   _SummaryRow(
                     criticalCount: _criticalCount,
                     warningCount: _warningCount,
                     infoCount: _infoCount,
                   ),
-
                   const SizedBox(height: 20),
-
-                  // Critical section
                   if (_byType(AlertSeverity.critical).isNotEmpty) ...[
                     _SectionHeader(
                       icon: Icons.warning_amber_rounded,
@@ -128,8 +118,6 @@ class FleetAlertsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                   ],
-
-                  // Warnings section
                   if (_byType(AlertSeverity.warning).isNotEmpty) ...[
                     _SectionHeader(
                       icon: Icons.error_outline,
@@ -142,8 +130,6 @@ class FleetAlertsScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 16),
                   ],
-
-                  // Info section
                   if (_byType(AlertSeverity.info).isNotEmpty) ...[
                     _SectionHeader(
                       icon: Icons.info_outline,
@@ -155,7 +141,6 @@ class FleetAlertsScreen extends StatelessWidget {
                       (a) => _AlertCard(alert: a),
                     ),
                   ],
-
                   const SizedBox(height: 24),
                 ],
               ),
@@ -182,8 +167,8 @@ class _GradientHeader extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Color(0xFFB71C1C), // deep red
-            Color(0xFF3B1E8E), // deep indigo
+            Color(0xFFB71C1C),
+            Color(0xFF3B1E8E),
           ],
         ),
       ),
@@ -308,6 +293,8 @@ class _SummaryRow extends StatelessWidget {
   }
 }
 
+// ─── Summary Cell ──────────────────────────────────────────────────────────
+
 class _SummaryCell extends StatelessWidget {
   final int count;
   final String label;
@@ -417,11 +404,11 @@ class _AlertCard extends StatelessWidget {
   Color get _iconBg {
     switch (alert.severity) {
       case AlertSeverity.critical:
-        return AppColors.error.withOpacity(0.1);
+        return AppColors.error.withValues(alpha: 0.1);
       case AlertSeverity.warning:
-        return AppColors.warning.withOpacity(0.1);
+        return AppColors.warning.withValues(alpha: 0.1);
       case AlertSeverity.info:
-        return AppColors.info.withOpacity(0.1);
+        return AppColors.info.withValues(alpha: 0.1);
     }
   }
 
@@ -452,10 +439,10 @@ class _AlertCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Icon + Title + Description ──
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Icon
                 Container(
                   width: 44,
                   height: 44,
@@ -466,8 +453,6 @@ class _AlertCard extends StatelessWidget {
                   child: Icon(alert.icon, color: _iconColor, size: 22),
                 ),
                 const SizedBox(width: 12),
-
-                // Title + description
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -508,40 +493,45 @@ class _AlertCard extends StatelessWidget {
 
             const SizedBox(height: 12),
 
-            // Time + action button
+            // ── Time + Button ──
             Row(
               mainAxisAlignment: alert.timeAgo.isNotEmpty
                   ? MainAxisAlignment.spaceBetween
                   : MainAxisAlignment.end,
               children: [
                 if (alert.timeAgo.isNotEmpty)
-                  Text(
-                    alert.timeAgo,
-                    style: AppTextStyles.labelUppercase.copyWith(
-                      fontSize: 10,
-                      color: AppColors.textHint,
+                  Flexible(
+                    child: Text(
+                      alert.timeAgo,
+                      style: AppTextStyles.labelUppercase.copyWith(
+                        fontSize: 10,
+                        color: AppColors.textHint,
+                      ),
                     ),
                   ),
-                SizedBox(
-                  height: 36,
-                  child: ElevatedButton(
-                    onPressed: () =>
-                        Navigator.pushNamed(context, alert.actionRoute),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius:
-                            BorderRadius.circular(AppSizes.radiusFull),
+                IntrinsicWidth(
+                  child: SizedBox(
+                    height: 36,
+                    child: ElevatedButton(
+                      onPressed: () =>
+                          Navigator.pushNamed(context, alert.actionRoute),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        padding:
+                            const EdgeInsets.symmetric(horizontal: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(
+                              AppSizes.radiusFull),
+                        ),
+                        textStyle: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
-                      textStyle: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      child: Text(alert.actionLabel),
                     ),
-                    child: Text(alert.actionLabel),
                   ),
                 ),
               ],
@@ -569,10 +559,20 @@ class _BottomNav extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
-              _NavItem(icon: Icons.directions_car_outlined, label: 'FLEET', active: false),
-              _NavItem(icon: Icons.map_outlined, label: 'MAP', active: false),
-              _NavItem(icon: Icons.notifications_outlined, label: 'ALERTS', active: true),
-              _NavItem(icon: Icons.person_outline, label: 'PROFILE', active: false),
+              _NavItem(
+                  icon: Icons.directions_car_outlined,
+                  label: 'FLEET',
+                  active: false),
+              _NavItem(
+                  icon: Icons.map_outlined, label: 'MAP', active: false),
+              _NavItem(
+                  icon: Icons.notifications_outlined,
+                  label: 'ALERTS',
+                  active: true),
+              _NavItem(
+                  icon: Icons.person_outline,
+                  label: 'PROFILE',
+                  active: false),
             ],
           ),
         ),
@@ -601,7 +601,7 @@ class _NavItem extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
           decoration: BoxDecoration(
             color: active
-                ? AppColors.primary.withOpacity(0.12)
+                ? AppColors.primary.withValues(alpha: 0.12)
                 : Colors.transparent,
             borderRadius: BorderRadius.circular(AppSizes.radiusFull),
           ),

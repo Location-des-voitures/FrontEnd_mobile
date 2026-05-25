@@ -158,8 +158,140 @@ class UserManagementRepositoryImpl implements UserManagementRepository {
   }
   
   @override
-  Future<Either<Failure, User>> createAdmin({required String name, required String email, required String password, required String passwordConfirmation, String? notifyVia}) {
-    // TODO: implement createAdmin
-    throw UnimplementedError();
+  Future<Either<Failure, PaginatedUsers>> getAdmins({
+    UserFilters? filters,
+  }) async {
+    try {
+      final result = await _datasource.getAdmins(filters: filters);
+      return Right(result.toDomain());
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ForbiddenException catch (e) {
+      return Left(ForbiddenFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> getAdminById(int id) async {
+    try {
+      final user = await _datasource.getAdminById(id);
+      return Right(user);
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ForbiddenException catch (e) {
+      return Left(ForbiddenFailure(e.message));
+    } on NotFoundException catch (e) {
+      return Left(NotFoundFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> createAdmin({
+    required String name,
+    required String email,
+    String? password,
+    String? passwordConfirmation,
+    String? notifyVia,
+  }) async {
+    try {
+      final user = await _datasource.createAdmin(
+        name: name,
+        email: email,
+        password: password,
+        passwordConfirmation: passwordConfirmation,
+        notifyVia: notifyVia,
+      );
+      return Right(user);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ForbiddenException catch (e) {
+      return Left(ForbiddenFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> activateAdmin(int id) async {
+    try {
+      final user = await _datasource.activateAdmin(id);
+      return Right(user);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ForbiddenException catch (e) {
+      return Left(ForbiddenFailure(e.message));
+    } on NotFoundException catch (e) {
+      return Left(NotFoundFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, User>> suspendAdmin(int id) async {
+    try {
+      final user = await _datasource.suspendAdmin(id);
+      return Right(user);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ForbiddenException catch (e) {
+      return Left(ForbiddenFailure(e.message));
+    } on NotFoundException catch (e) {
+      return Left(NotFoundFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> deleteAdmin(int id) async {
+    try {
+      await _datasource.deleteAdmin(id);
+      return const Right(null);
+    } on ValidationException catch (e) {
+      return Left(ValidationFailure(message: e.message, errors: e.errors));
+    } on AuthException catch (e) {
+      return Left(AuthFailure(e.message));
+    } on ForbiddenException catch (e) {
+      return Left(ForbiddenFailure(e.message));
+    } on NotFoundException catch (e) {
+      return Left(NotFoundFailure(e.message));
+    } on NetworkException catch (e) {
+      return Left(NetworkFailure(e.message));
+    } on ServerException catch (e) {
+      return Left(ServerFailure(e.message));
+    } catch (_) {
+      return const Left(UnexpectedFailure());
+    }
   }
 }

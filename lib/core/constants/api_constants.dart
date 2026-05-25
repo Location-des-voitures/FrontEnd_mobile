@@ -2,7 +2,7 @@
 /// API CONSTANTS — FlotTrack API v1.0
 /// -------------------------------------------------------
 /// Aligné sur la documentation officielle de l'API.
-/// Base URL : http://localhost:8000/api
+/// Base URL par defaut : http://10.0.2.2:8000/api
 /// Auth : Bearer JWT (60 minutes)
 /// -------------------------------------------------------
 library;
@@ -11,7 +11,10 @@ class ApiConstants {
   ApiConstants._();
 
   // ── URL de base ──────────────────────────────────────
-  static const String baseUrl = 'http://localhost:8000/api';
+  static const String baseUrl = String.fromEnvironment(
+    'API_BASE_URL',
+    defaultValue: 'http://localhost:8000/api',
+  );
 
   // ── Timeout ──────────────────────────────────────────
   static const Duration connectTimeout = Duration(seconds: 15);
@@ -40,45 +43,72 @@ class ApiConstants {
   // ═══════════════════════════════════════════════════════
   // SUPER ADMIN — User Management
   // ═══════════════════════════════════════════════════════
-  static const String users = '/admin/users';
-  static String userById(int id) => '/admin/users/$id';
-  static String activateUser(int id) => '/admin/users/$id/activate';
-  static String deactivateUser(int id) => '/admin/users/$id/deactivate';
-  static String deleteUser(int id) => '/admin/users/$id';
-
+ static const String users = '/super-admin/users';
+static String userById(int id) => '/super-admin/users/$id';
+static String activateUser(int id) => '/super-admin/users/$id/activate';
+static String deactivateUser(int id) => '/super-admin/users/$id/deactivate';
+static String deleteUser(int id) => '/super-admin/users/$id';
   // ═══════════════════════════════════════════════════════
   // SUPER ADMIN — Admin Management (Loueurs)
   // ═══════════════════════════════════════════════════════
-  static const String admins = '/admin/admins';
-  static String adminById(int id) => '/admin/admins/$id';
-  static const String createAdmin = '/admin/admins';
-  static String activateAdmin(int id) => '/admin/admins/$id/activate';
-  static String suspendAdmin(int id) => '/admin/admins/$id/suspend';
-  static String deleteAdmin(int id) => '/admin/admins/$id';
+  static const String admins = '/super-admin/admins';
+static String adminById(int id) => '/super-admin/admins/$id';
+static const String createAdmin = '/super-admin/admins';
+static String activateAdmin(int id) => '/super-admin/admins/$id/activate';
+static String suspendAdmin(int id) => '/super-admin/admins/$id/suspend';
+static String deleteAdmin(int id) => '/super-admin/admins/$id';
 
   // ═══════════════════════════════════════════════════════
   // SUPER ADMIN — Subscription Management
   // ═══════════════════════════════════════════════════════
-  static const String subscriptionStats = '/admin/subscriptions/stats';
-  static const String subscriptions = '/admin/subscriptions';
-  static String subscriptionById(int id) => '/admin/subscriptions/$id';
-  static const String createSubscription = '/admin/subscriptions';
-  static String renewSubscription(int id) => '/admin/subscriptions/$id/renew';
-  static String cancelSubscription(int id) => '/admin/subscriptions/$id/cancel';
+  static const String subscriptionStats = '/super-admin/subscriptions/stats';
+  static const String subscriptions = '/super-admin/subscriptions';
+  static String subscriptionById(int id) => '/super-admin/subscriptions/$id';
+  static const String createSubscription = '/super-admin/subscriptions';
+  static String renewSubscription(int id) => '/super-admin/subscriptions/$id/renew';
+  static String cancelSubscription(int id) => '/super-admin/subscriptions/$id/cancel';
+
 
   // ═══════════════════════════════════════════════════════
   // SUPER ADMIN — System Monitoring
   // ═══════════════════════════════════════════════════════
-  static const String systemHealth = '/admin/monitoring/health';
-  static const String loginLogs = '/admin/monitoring/login-logs';
-  static const String loginStats = '/admin/monitoring/login-stats';
-  static const String activityLogs = '/admin/monitoring/activity-logs';
+  static const String systemHealth = '/super-admin/monitoring/health';
+static const String loginLogs    = '/super-admin/monitoring/login-logs';
+static const String activityLogs = '/super-admin/monitoring/activity-logs';
+static const String loginStats   = '/super-admin/monitoring/login-stats';
+
 
   // ═══════════════════════════════════════════════════════
-  // SUPER ADMIN — Dashboard
-  // ═══════════════════════════════════════════════════════
-  static const String dashboard = '/admin/dashboard';
-  static const String dashboardKpis = '/admin/dashboard/kpis';
-  static const String dashboardAlerts = '/admin/dashboard/alerts';
-  static const String dashboardCharts = '/admin/dashboard/charts';
+// SUPER ADMIN — Dashboard
+// ═══════════════════════════════════════════════════════
+static const String dashboard       = '/super-admin/dashboard';
+static const String dashboardKpis   = '/super-admin/dashboard/kpis';
+static const String dashboardAlerts = '/super-admin/dashboard/alerts';
+static const String dashboardCharts = '/super-admin/dashboard/charts';
+
+// ═══════════════════════════════════════════════════════
+// ADMIN (Loueur) — Cars
+// ═══════════════════════════════════════════════════════
+static const String cars = '/admin/cars';
+static String carById(int id) => '/admin/cars/$id';
+static String carStatus(int id) => '/admin/cars/$id/status';
+
+// ═══════════════════════════════════════════════════════
+// ADMIN (Loueur) — Reservations
+// ═══════════════════════════════════════════════════════
+static const String reservations = '/admin/reservations';
+static String reservationById(int id) => '/admin/reservations/$id';
+static String approveReservation(int id) => '/admin/reservations/$id/approve';
+static String rejectReservation(int id) => '/admin/reservations/$id/reject';
+static String cancelReservation(int id) => '/admin/reservations/$id/cancel';
+static String verifyPayment(int pid) => '/admin/reservations/payments/$pid/verify';
+static String paymentReceipt(int pid) => '/admin/reservations/payments/$pid/receipt';
+static String invoicePdf(int id) => '/admin/invoices/$id/pdf';
+static String contractPdf(int id) => '/admin/contracts/$id/pdf';
+
+// ═══════════════════════════════════════════════════════
+// ADMIN (Loueur) — Dashboard
+// ═══════════════════════════════════════════════════════
+static const String adminDashboard = '/admin/dashboard';
+static const String adminDashboardKpis = '/admin/dashboard/kpis';
 }

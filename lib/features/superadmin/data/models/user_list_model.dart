@@ -20,7 +20,8 @@ class UserListModel {
   });
 
   factory UserListModel.fromJson(Map<String, dynamic> json) {
-    final usersList = (json['users'] as List)
+    final rawUsers = (json['users'] ?? json['admins']) as List;
+    final usersList = rawUsers
         .map((u) => UserModel.fromJson(u as Map<String, dynamic>))
         .toList();
     final pagination = json['pagination'] as Map<String, dynamic>;

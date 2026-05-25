@@ -4,6 +4,7 @@
 /// Un seul import pour tout le core :
 ///   import 'package:rent_ride_wheels/core/core.dart';
 /// -------------------------------------------------------
+library;
 
 export 'constants/api_constants.dart';
 export 'constants/app_constants.dart';

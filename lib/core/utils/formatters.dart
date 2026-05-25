@@ -8,6 +8,7 @@
 ///   AppFormatters.price(250)     → "250,00 DH"
 ///   AppFormatters.date(dateObj)  → "15/04/2026"
 /// -------------------------------------------------------
+library;
 
 import '../constants/app_constants.dart';
 

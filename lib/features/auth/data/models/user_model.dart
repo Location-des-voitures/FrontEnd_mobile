@@ -24,7 +24,7 @@ class UserModel extends User {
       name: json['name'] as String,
       email: json['email'] as String,
       role: json['role'] as String,
-      isActive: json['is_active'] as bool,
+      isActive: json['is_active'] as bool? ?? true,
       emailVerifiedAt: json['email_verified_at'] as String?,
       googleId: json['google_id'] as String?,
       googleAvatar: json['google_avatar'] as String?,

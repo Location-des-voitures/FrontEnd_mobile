@@ -21,6 +21,7 @@
 ///     (user) => // naviguer vers home,
 ///   );
 /// -------------------------------------------------------
+library;
 
 import 'package:dartz/dartz.dart';
 

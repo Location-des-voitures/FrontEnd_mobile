@@ -58,12 +58,16 @@ abstract class UserManagementRepository {
   Future<Either<Failure, User>> activateUser(int id);
   Future<Either<Failure, User>> deactivateUser(int id);
   Future<Either<Failure, void>> deleteUser(int id);
- Future<Either<Failure, User>> createAdmin({
+  Future<Either<Failure, PaginatedUsers>> getAdmins({UserFilters? filters});
+  Future<Either<Failure, User>> getAdminById(int id);
+  Future<Either<Failure, User>> createAdmin({
     required String name,
     required String email,
-    required String password,
-    required String passwordConfirmation,
-    String? notifyVia, // Optionnel ici
+    String? password,
+    String? passwordConfirmation,
+    String? notifyVia,
   });
-  
+  Future<Either<Failure, User>> activateAdmin(int id);
+  Future<Either<Failure, User>> suspendAdmin(int id);
+  Future<Either<Failure, void>> deleteAdmin(int id);
 }

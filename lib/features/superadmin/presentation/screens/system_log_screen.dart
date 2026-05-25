@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/theme/app_theme.dart';
+import '../providers/monitoring_provider.dart';
 
 // ─── Models ────────────────────────────────────────────────────────────────
 
@@ -40,86 +42,25 @@ class LogEvent {
 
 // ─── Screen ────────────────────────────────────────────────────────────────
 
-class SystemLogScreen extends StatefulWidget {
+class SystemLogScreen extends ConsumerStatefulWidget {
   const SystemLogScreen({super.key});
 
   @override
-  State<SystemLogScreen> createState() => _SystemLogScreenState();
+  ConsumerState<SystemLogScreen> createState() => _SystemLogScreenState();
 }
 
-class _SystemLogScreenState extends State<SystemLogScreen> {
+class _SystemLogScreenState extends ConsumerState<SystemLogScreen> {
   LogCategory _selectedCategory = LogCategory.all;
   DateTime _fromDate = DateTime(2023, 10, 12);
   DateTime _toDate = DateTime(2023, 10, 24);
 
-  final List<LogEvent> _events = [
-    LogEvent(
-      id: '1',
-      type: LogEventType.userCreated,
-      message: 'New client Youssef Tazi registered via email',
-      actor: 'System',
-      ipAddress: '196.206.10.5',
-      timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
-      isFlagged: true,
-    ),
-    LogEvent(
-      id: '2',
-      type: LogEventType.adminCreated,
-      message: 'Fleet manager Sara Alami onboarded to network',
-      actor: 'Super Admin',
-      ipAddress: '192.168.1.1',
-      timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-    ),
-    LogEvent(
-      id: '3',
-      type: LogEventType.adminSuspended,
-      message: 'Karim Motors fleet access suspended',
-      actor: 'Super Admin',
-      ipAddress: '192.168.1.1',
-      timestamp: DateTime.now().subtract(const Duration(hours: 3)),
-      isFlagged: true,
-    ),
-    LogEvent(
-      id: '4',
-      type: LogEventType.userDeleted,
-      message: 'Client #1182 permanently removed from system',
-      actor: 'Super Admin',
-      ipAddress: '192.168.1.1',
-      timestamp: DateTime.now().subtract(const Duration(hours: 5)),
-    ),
-    LogEvent(
-      id: '5',
-      type: LogEventType.userActivated,
-      message: 'Fatima Zahra fleet access restored',
-      actor: 'Super Admin',
-      ipAddress: '192.168.1.1',
-      timestamp: DateTime.now().subtract(const Duration(hours: 6)),
-    ),
-    LogEvent(
-      id: '6',
-      type: LogEventType.subscriptionCreated,
-      message: 'Pro fleet plan assigned to Ahmed Benali (99 MAD)',
-      actor: 'Super Admin',
-      ipAddress: '192.168.1.1',
-      timestamp: DateTime.now().subtract(const Duration(days: 1)),
-    ),
-    LogEvent(
-      id: '7',
-      type: LogEventType.subscriptionRenewed,
-      message: 'Ahmed Benali upgraded from Pro to Premium (199 MAD)',
-      actor: 'Super Admin',
-      ipAddress: '192.168.1.1',
-      timestamp: DateTime.now().subtract(const Duration(days: 1, hours: 2)),
-    ),
-    LogEvent(
-      id: '8',
-      type: LogEventType.subscriptionCancelled,
-      message: 'Nadia Alaoui Premium plan terminated',
-      actor: 'Super Admin',
-      ipAddress: '192.168.1.1',
-      timestamp: DateTime.now().subtract(const Duration(days: 2)),
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(monitoringProvider.notifier).load();
+    });
+  }
 
   // Tag label + color per event type
   String _tagLabel(LogEventType type) {
@@ -185,6 +126,21 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
     }
   }
 
+  LogEventType _actionToType(String action) {
+    switch (action) {
+      case 'user.created':           return LogEventType.userCreated;
+      case 'user.deleted':           return LogEventType.userDeleted;
+      case 'user.activated':
+      case 'user.deactivated':       return LogEventType.userActivated;
+      case 'admin.created':          return LogEventType.adminCreated;
+      case 'admin.suspended':        return LogEventType.adminSuspended;
+      case 'subscription.created':   return LogEventType.subscriptionCreated;
+      case 'subscription.renewed':   return LogEventType.subscriptionRenewed;
+      case 'subscription.cancelled': return LogEventType.subscriptionCancelled;
+      default:                       return LogEventType.userCreated;
+    }
+  }
+
   bool _matchesCategory(LogEvent e) {
     switch (_selectedCategory) {
       case LogCategory.all:
@@ -209,8 +165,20 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
     }
   }
 
-  List<LogEvent> get _filtered =>
-      _events.where(_matchesCategory).toList();
+  List<LogEvent> get _filtered {
+    final monState = ref.read(monitoringProvider);
+    return monState.logs
+        .map((item) => LogEvent(
+              id: item.id.toString(),
+              type: _actionToType(item.action),
+              message: item.action,
+              actor: item.actorName ?? 'System',
+              ipAddress: item.ipAddress ?? '—',
+              timestamp: item.performedAt,
+            ))
+        .where(_matchesCategory)
+        .toList();
+  }
 
   String _relativeTime(DateTime dt) {
     final diff = DateTime.now().difference(dt);
@@ -249,12 +217,17 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
           _toDate = picked;
         }
       });
+       ref.read(monitoringProvider.notifier).load(
+      from: '${_fromDate.year}-${_fromDate.month.toString().padLeft(2,'0')}-${_fromDate.day.toString().padLeft(2,'0')}',
+      to: '${_toDate.year}-${_toDate.month.toString().padLeft(2,'0')}-${_toDate.day.toString().padLeft(2,'0')}',
+    );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final filtered = _filtered;
+    final monState = ref.watch(monitoringProvider);
+    final filtered = monState.isLoading ? <LogEvent>[] : _filtered;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -294,14 +267,23 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
           ),
           Padding(
             padding: const EdgeInsets.only(right: 12),
-            child: Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                shape: BoxShape.circle,
+            child: GestureDetector(
+              onTap: () => ref.read(monitoringProvider.notifier).load(),
+              child: Container(
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  shape: BoxShape.circle,
+                ),
+                child: monState.isLoading
+                    ? const Padding(
+                        padding: EdgeInsets.all(7),
+                        child: CircularProgressIndicator(
+                            color: Colors.white, strokeWidth: 2),
+                      )
+                    : const Icon(Icons.refresh, color: Colors.white, size: 18),
               ),
-              child: const Icon(Icons.refresh, color: Colors.white, size: 18),
             ),
           ),
         ],
@@ -320,32 +302,40 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                     icon: Icons.grid_view,
                     label: 'All Events',
                     selected: _selectedCategory == LogCategory.all,
-                    onTap: () =>
-                        setState(() => _selectedCategory = LogCategory.all),
+                    onTap: () {
+                      setState(() => _selectedCategory = LogCategory.all);
+                      ref.read(monitoringProvider.notifier).applyFilter(null);
+                    },
                   ),
                   const SizedBox(width: 8),
                   _CategoryChip(
                     icon: Icons.person_outline,
                     label: 'Users',
                     selected: _selectedCategory == LogCategory.users,
-                    onTap: () =>
-                        setState(() => _selectedCategory = LogCategory.users),
+                    onTap: () {
+                      setState(() => _selectedCategory = LogCategory.users);
+                      ref.read(monitoringProvider.notifier).applyFilter('user.created');
+                    },
                   ),
                   const SizedBox(width: 8),
                   _CategoryChip(
                     icon: Icons.shield_outlined,
                     label: 'Admins',
                     selected: _selectedCategory == LogCategory.admins,
-                    onTap: () =>
-                        setState(() => _selectedCategory = LogCategory.admins),
+                    onTap: () {
+                      setState(() => _selectedCategory = LogCategory.admins);
+                      ref.read(monitoringProvider.notifier).applyFilter('admin.created');
+                    },
                   ),
                   const SizedBox(width: 8),
                   _CategoryChip(
                     icon: Icons.credit_card_outlined,
                     label: '',
                     selected: _selectedCategory == LogCategory.subscriptions,
-                    onTap: () => setState(
-                        () => _selectedCategory = LogCategory.subscriptions),
+                    onTap: () {
+                      setState(() => _selectedCategory = LogCategory.subscriptions);
+                      ref.read(monitoringProvider.notifier).applyFilter('subscription.created');
+                    },
                     iconOnly: true,
                   ),
                 ],
@@ -404,7 +394,7 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                     ),
                     const SizedBox(width: 10),
                     Text(
-                      '1,247 total events recorded',
+                      '${monState.totalEvents} total events recorded',
                       style: const TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
@@ -422,9 +412,9 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
                     color: AppColors.primary,
                     borderRadius: BorderRadius.circular(AppSizes.radiusFull),
                   ),
-                  child: const Text(
-                    'Today: 23 events',
-                    style: TextStyle(
+                  child: Text(
+                    'Today: ${monState.todayEvents} events',
+                    style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
@@ -437,22 +427,31 @@ class _SystemLogScreenState extends State<SystemLogScreen> {
 
           // Log list
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-              itemCount: filtered.length + 1, // +1 for Load More button
-              itemBuilder: (context, index) {
-                if (index == filtered.length) {
-                  return _LoadMoreButton(onTap: () {});
-                }
-                return _LogEventCard(
-                  event: filtered[index],
-                  tagLabel: _tagLabel(filtered[index].type),
-                  tagColor: _tagColor(filtered[index].type),
-                  dotColor: _dotColor(filtered[index].type),
-                  relativeTime: _relativeTime(filtered[index].timestamp),
-                );
-              },
-            ),
+            child: monState.isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : monState.errorMessage != null
+                    ? Center(
+                        child: Text(
+                          monState.errorMessage!,
+                          style: const TextStyle(color: AppColors.error),
+                        ),
+                      )
+                    : ListView.builder(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                        itemCount: filtered.length + 1,
+                        itemBuilder: (context, index) {
+                          if (index == filtered.length) {
+                            return _LoadMoreButton(onTap: () {});
+                          }
+                          return _LogEventCard(
+                            event: filtered[index],
+                            tagLabel: _tagLabel(filtered[index].type),
+                            tagColor: _tagColor(filtered[index].type),
+                            dotColor: _dotColor(filtered[index].type),
+                            relativeTime: _relativeTime(filtered[index].timestamp),
+                          );
+                        },
+                      ),
           ),
         ],
       ),
@@ -594,7 +593,6 @@ class _LogEventCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Tag + time
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -626,7 +624,6 @@ class _LogEventCard extends StatelessWidget {
 
             const SizedBox(height: 8),
 
-            // Message
             Text(
               event.message,
               style: AppTextStyles.bodyMedium.copyWith(
@@ -636,10 +633,8 @@ class _LogEventCard extends StatelessWidget {
 
             const SizedBox(height: 10),
 
-            // Actor + IP + flag
             Row(
               children: [
-                // Actor avatar placeholder
                 Container(
                   width: 22,
                   height: 22,

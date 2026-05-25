@@ -4,6 +4,7 @@
 /// Chaque Failure correspond à un code HTTP réel de ton API.
 /// Les messages sont ceux retournés par Laravel.
 /// -------------------------------------------------------
+library;
 
 /// Classe de base
 abstract class Failure {
@@ -19,9 +20,9 @@ abstract class Failure {
 /// 500 — Erreur serveur
 class ServerFailure extends Failure {
   const ServerFailure([
-    String message = 'Erreur du serveur. Veuillez réessayer.',
+    super.message = 'Erreur du serveur. Veuillez réessayer.',
     int? statusCode,
-  ]) : super(message, statusCode: statusCode);
+  ]) : super(statusCode: statusCode);
 }
 
 /// 401 — Non authentifié
@@ -32,8 +33,8 @@ class ServerFailure extends Failure {
 ///   "Invalid email or password."
 class AuthFailure extends Failure {
   const AuthFailure([
-    String message = 'Non authentifié.',
-  ]) : super(message, statusCode: 401);
+    super.message = 'Non authentifié.',
+  ]) : super(statusCode: 401);
 }
 
 /// 403 — Accès refusé
@@ -45,16 +46,16 @@ class ForbiddenFailure extends Failure {
   final String? action; // ex: "Resend verification at POST /api/email/resend"
 
   const ForbiddenFailure([
-    String message = 'Accès refusé.',
+    super.message = 'Accès refusé.',
     this.action,
-  ]) : super(message, statusCode: 403);
+  ]) : super(statusCode: 403);
 }
 
 /// 404 — Ressource non trouvée
 class NotFoundFailure extends Failure {
   const NotFoundFailure([
-    String message = 'Ressource introuvable.',
-  ]) : super(message, statusCode: 404);
+    super.message = 'Ressource introuvable.',
+  ]) : super(statusCode: 404);
 }
 
 /// 422 — Validation ou règle métier échouée
@@ -95,20 +96,20 @@ class RateLimitFailure extends Failure {
 /// Pas de connexion internet
 class NetworkFailure extends Failure {
   const NetworkFailure([
-    String message = 'Pas de connexion internet.',
-  ]) : super(message);
+    super.message = 'Pas de connexion internet.',
+  ]);
 }
 
 /// Erreur de cache local
 class CacheFailure extends Failure {
   const CacheFailure([
-    String message = 'Erreur de cache local.',
-  ]) : super(message);
+    super.message = 'Erreur de cache local.',
+  ]);
 }
 
 /// Erreur inattendue (fallback)
 class UnexpectedFailure extends Failure {
   const UnexpectedFailure([
-    String message = 'Une erreur inattendue est survenue.',
-  ]) : super(message);
+    super.message = 'Une erreur inattendue est survenue.',
+  ]);
 }

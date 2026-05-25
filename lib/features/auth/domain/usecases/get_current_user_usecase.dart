@@ -5,6 +5,7 @@
 /// Utilisé au démarrage de l'app pour savoir si on
 /// redirige vers login ou vers home.
 /// -------------------------------------------------------
+library;
 
 import 'package:dartz/dartz.dart';
 

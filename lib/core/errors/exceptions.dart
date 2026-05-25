@@ -4,6 +4,7 @@
 /// Lancées dans la couche Data (datasources).
 /// Les repositories les attrapent → les convertissent en Failures.
 /// -------------------------------------------------------
+library;
 
 /// Exception serveur (500+)
 class ServerException implements Exception {

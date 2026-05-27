@@ -7,27 +7,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../../core/theme/app_theme.dart';
 
-// ══════════════════════════════════════════════════════════
-// MODELS (à remplacer par les vraies entités)
-// ══════════════════════════════════════════════════════════
-
-enum CarStatus { available, rented, maintenance }
-
-class Car {
-  final int id;
-  final String name;
-  final String plate;
-  final double dailyPrice;
-  final CarStatus status;
-
-  const Car({
-    required this.id,
-    required this.name,
-    required this.plate,
-    required this.dailyPrice,
-    required this.status,
-  });
-}
+// ✅ Import des vraies entités du domaine (plus de doublons locaux)
+import '../../domain/entities/car.dart';
 
 // ══════════════════════════════════════════════════════════
 // SCREEN
@@ -46,13 +27,104 @@ class _CarListScreenState extends State<CarListScreen> {
   String _searchQuery = '';
 
   // Mock data — remplacer par CarProvider (Riverpod)
-  static const _allCars = [
-    Car(id: 1, name: 'Porsche 911 Carrera', plate: 'DE-992-GT', dailyPrice: 450, status: CarStatus.available),
-    Car(id: 2, name: 'BMW M4 Competition', plate: 'NY-882-CP', dailyPrice: 280, status: CarStatus.rented),
-    Car(id: 3, name: 'Audi RS7 Sportback', plate: 'RS-007-AU', dailyPrice: 320, status: CarStatus.maintenance),
-    Car(id: 4, name: 'Mercedes G63 AMG', plate: 'G-633-MB', dailyPrice: 600, status: CarStatus.available),
-    Car(id: 5, name: 'Tesla Model S Plaid', plate: 'TS-001-EV', dailyPrice: 350, status: CarStatus.available),
-    Car(id: 6, name: 'Ferrari Roma', plate: 'FR-488-IT', dailyPrice: 890, status: CarStatus.rented),
+  // ✅ Utilise Car du domaine : brand/model/licensePlate/pricePerDay/status
+  static final _allCars = [
+    Car(
+      id: 1,
+      name: 'Porsche 911 Carrera',
+      brand: 'Porsche',
+      model: '911 Carrera',
+      year: 2023,
+      licensePlate: 'DE-992-GT',
+      color: 'GT Silver',
+      pricePerDay: 450,
+      status: CarStatus.available,
+      seats: 2,
+      transmission: TransmissionType.automatic,
+      fuelType: FuelType.gasoline,
+      images: [],
+      isActive: true,
+    ),
+    Car(
+      id: 2,
+      name: 'BMW M4 Competition',
+      brand: 'BMW',
+      model: 'M4 Competition',
+      year: 2023,
+      licensePlate: 'NY-882-CP',
+      color: 'Frozen Black',
+      pricePerDay: 280,
+      status: CarStatus.rented,
+      seats: 4,
+      transmission: TransmissionType.automatic,
+      fuelType: FuelType.gasoline,
+      images: [],
+      isActive: true,
+    ),
+    Car(
+      id: 3,
+      name: 'Audi RS7 Sportback',
+      brand: 'Audi',
+      model: 'RS7 Sportback',
+      year: 2022,
+      licensePlate: 'RS-007-AU',
+      color: 'Nardo Grey',
+      pricePerDay: 320,
+      status: CarStatus.maintenance,
+      seats: 5,
+      transmission: TransmissionType.automatic,
+      fuelType: FuelType.gasoline,
+      images: [],
+      isActive: true,
+    ),
+    Car(
+      id: 4,
+      name: 'Mercedes G63 AMG',
+      brand: 'Mercedes',
+      model: 'G63 AMG',
+      year: 2023,
+      licensePlate: 'G-633-MB',
+      color: 'Obsidian Black',
+      pricePerDay: 600,
+      status: CarStatus.available,
+      seats: 5,
+      transmission: TransmissionType.automatic,
+      fuelType: FuelType.gasoline,
+      images: [],
+      isActive: true,
+    ),
+    Car(
+      id: 5,
+      name: 'Tesla Model S Plaid',
+      brand: 'Tesla',
+      model: 'Model S Plaid',
+      year: 2023,
+      licensePlate: 'TS-001-EV',
+      color: 'Pearl White',
+      pricePerDay: 350,
+      status: CarStatus.available,
+      seats: 5,
+      transmission: TransmissionType.automatic,
+      fuelType: FuelType.electric,
+      images: [],
+      isActive: true,
+    ),
+    Car(
+      id: 6,
+      name: 'Ferrari Roma',
+      brand: 'Ferrari',
+      model: 'Roma',
+      year: 2022,
+      licensePlate: 'FR-488-IT',
+      color: 'Rosso Corsa',
+      pricePerDay: 890,
+      status: CarStatus.rented,
+      seats: 2,
+      transmission: TransmissionType.automatic,
+      fuelType: FuelType.gasoline,
+      images: [],
+      isActive: true,
+    ),
   ];
 
   List<Car> get _filtered {
@@ -61,7 +133,7 @@ class _CarListScreenState extends State<CarListScreen> {
       final q = _searchQuery.toLowerCase();
       final matchSearch = q.isEmpty ||
           c.name.toLowerCase().contains(q) ||
-          c.plate.toLowerCase().contains(q);
+          c.licensePlate.toLowerCase().contains(q); // ✅ licensePlate (pas plate)
       return matchStatus && matchSearch;
     }).toList();
   }
@@ -124,7 +196,6 @@ class _CarListScreenState extends State<CarListScreen> {
             ],
           ),
           const Spacer(),
-          // Sort button
           Container(
             width: 46,
             height: 46,
@@ -139,14 +210,9 @@ class _CarListScreenState extends State<CarListScreen> {
                 ),
               ],
             ),
-            child: const Icon(
-              Icons.sort_rounded,
-              color: AppColors.textPrimary,
-              size: 20,
-            ),
+            child: const Icon(Icons.sort_rounded, color: AppColors.textPrimary, size: 20),
           ),
           const SizedBox(width: 10),
-          // Add button
           GestureDetector(
             onTap: () {
               // TODO: navigate to add car screen
@@ -193,32 +259,18 @@ class _CarListScreenState extends State<CarListScreen> {
         child: TextField(
           controller: _searchController,
           onChanged: (v) => setState(() => _searchQuery = v),
-          style: GoogleFonts.outfit(
-            fontSize: 15,
-            color: AppColors.textPrimary,
-          ),
+          style: GoogleFonts.outfit(fontSize: 15, color: AppColors.textPrimary),
           decoration: InputDecoration(
             hintText: 'Search by model or plate...',
-            hintStyle: GoogleFonts.outfit(
-              fontSize: 15,
-              color: AppColors.textHint,
-            ),
-            prefixIcon: const Icon(
-              Icons.search_rounded,
-              color: AppColors.textHint,
-              size: 22,
-            ),
+            hintStyle: GoogleFonts.outfit(fontSize: 15, color: AppColors.textHint),
+            prefixIcon: const Icon(Icons.search_rounded, color: AppColors.textHint, size: 22),
             suffixIcon: _searchQuery.isNotEmpty
                 ? GestureDetector(
                     onTap: () {
                       _searchController.clear();
                       setState(() => _searchQuery = '');
                     },
-                    child: const Icon(
-                      Icons.close_rounded,
-                      color: AppColors.textHint,
-                      size: 18,
-                    ),
+                    child: const Icon(Icons.close_rounded, color: AppColors.textHint, size: 18),
                   )
                 : null,
             border: InputBorder.none,
@@ -233,6 +285,7 @@ class _CarListScreenState extends State<CarListScreen> {
 
   // ── Filter Chips ───────────────────────────────────────
   Widget _buildFilterChips() {
+    // ✅ Utilise CarStatus du domaine directement
     final filters = <({String label, CarStatus? value})>[
       (label: 'ALL', value: null),
       (label: 'AVAILABLE', value: CarStatus.available),
@@ -299,28 +352,14 @@ class _CarListScreenState extends State<CarListScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.directions_car_outlined,
-              size: 56,
-              color: AppColors.textHint.withValues(alpha: 0.5),
-            ),
+            Icon(Icons.directions_car_outlined, size: 56, color: AppColors.textHint.withValues(alpha: 0.5)),
             const SizedBox(height: 16),
             Text(
               'No vehicles found',
-              style: GoogleFonts.outfit(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.textSecondary,
-              ),
+              style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textSecondary),
             ),
             const SizedBox(height: 6),
-            Text(
-              'Try adjusting your filters',
-              style: GoogleFonts.outfit(
-                fontSize: 14,
-                color: AppColors.textHint,
-              ),
-            ),
+            Text('Try adjusting your filters', style: GoogleFonts.outfit(fontSize: 14, color: AppColors.textHint)),
           ],
         ),
       );
@@ -342,7 +381,6 @@ class _CarListScreenState extends State<CarListScreen> {
 
 class _CarCard extends StatelessWidget {
   final Car car;
-
   const _CarCard({required this.car});
 
   @override
@@ -351,7 +389,7 @@ class _CarCard extends StatelessWidget {
 
     return GestureDetector(
       onTap: () {
-        // TODO: context.push(AppRoutes.adminCarDetail, extra: car.id)
+        // TODO: context.push('/admin/cars/${car.id}')
       },
       child: Container(
         padding: const EdgeInsets.all(16),
@@ -368,64 +406,41 @@ class _CarCard extends StatelessWidget {
         ),
         child: Row(
           children: [
-            // Car image circle
             Container(
               width: 72,
               height: 72,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.surfaceVariant,
-              ),
+              decoration: BoxDecoration(shape: BoxShape.circle, color: AppColors.surfaceVariant),
               child: ClipOval(
-                child: Icon(
-                  Icons.directions_car_rounded,
-                  size: 36,
-                  color: AppColors.primary.withValues(alpha: 0.6),
-                ),
+                child: Icon(Icons.directions_car_rounded, size: 36, color: AppColors.primary.withValues(alpha: 0.6)),
               ),
             ),
             const SizedBox(width: 16),
-            // Info
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Name + badge
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
                       Expanded(
                         child: Text(
                           car.name,
-                          style: GoogleFonts.outfit(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.textPrimary,
-                          ),
+                          style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
                       ),
                       const SizedBox(width: 8),
-                      _StatusBadge(
-                        label: badge.label,
-                        textColor: badge.textColor,
-                        bgColor: badge.bgColor,
-                      ),
+                      _StatusBadge(label: badge.label, textColor: badge.textColor, bgColor: badge.bgColor),
                     ],
                   ),
                   const SizedBox(height: 4),
-                  // Plate
+                  // ✅ licensePlate au lieu de plate
                   Text(
-                    car.plate,
-                    style: GoogleFonts.outfit(
-                      fontSize: 13,
-                      color: AppColors.textHint,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    car.licensePlate,
+                    style: GoogleFonts.outfit(fontSize: 13, color: AppColors.textHint, fontWeight: FontWeight.w500),
                   ),
                   const SizedBox(height: 10),
-                  // Price + arrow
                   Row(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -433,32 +448,21 @@ class _CarCard extends StatelessWidget {
                         text: TextSpan(
                           children: [
                             TextSpan(
-                              text: '\$${car.dailyPrice.toStringAsFixed(0)}',
-                              style: GoogleFonts.outfit(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.textPrimary,
-                              ),
+                              // ✅ pricePerDay au lieu de dailyPrice
+                              text: '\$${car.pricePerDay.toStringAsFixed(0)}',
+                              style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.w800, color: AppColors.textPrimary),
                             ),
                             TextSpan(
                               text: ' /day',
-                              style: GoogleFonts.outfit(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w400,
-                                color: AppColors.textHint,
-                              ),
+                              style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w400, color: AppColors.textHint),
                             ),
                           ],
                         ),
                       ),
                       const Spacer(),
                       Icon(
-                        car.status == CarStatus.maintenance
-                            ? Icons.settings_outlined
-                            : Icons.chevron_right_rounded,
-                        color: car.status == CarStatus.maintenance
-                            ? AppColors.textHint
-                            : AppColors.primary,
+                        car.status == CarStatus.maintenance ? Icons.settings_outlined : Icons.chevron_right_rounded,
+                        color: car.status == CarStatus.maintenance ? AppColors.textHint : AppColors.primary,
                         size: 22,
                       ),
                     ],
@@ -472,8 +476,8 @@ class _CarCard extends StatelessWidget {
     );
   }
 
-  ({String label, Color textColor, Color bgColor}) _statusBadge(
-      CarStatus status) {
+  ({String label, Color textColor, Color bgColor}) _statusBadge(CarStatus status) {
+    // ✅ Utilise CarStatus du domaine
     return switch (status) {
       CarStatus.available => (
           label: 'AVAILABLE',
@@ -503,28 +507,16 @@ class _StatusBadge extends StatelessWidget {
   final Color textColor;
   final Color bgColor;
 
-  const _StatusBadge({
-    required this.label,
-    required this.textColor,
-    required this.bgColor,
-  });
+  const _StatusBadge({required this.label, required this.textColor, required this.bgColor});
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-      ),
+      decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(AppSizes.radiusFull)),
       child: Text(
         label,
-        style: GoogleFonts.outfit(
-          fontSize: 10,
-          fontWeight: FontWeight.w700,
-          color: textColor,
-          letterSpacing: 0.4,
-        ),
+        style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.w700, color: textColor, letterSpacing: 0.4),
       ),
     );
   }

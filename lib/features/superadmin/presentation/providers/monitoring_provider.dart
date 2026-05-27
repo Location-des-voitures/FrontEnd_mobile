@@ -1,9 +1,9 @@
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../core/providers/core_providers.dart';
 import '../../data/datasources/monitoring_remote_datasource.dart';
-import 'package:flutter_riverpod/legacy.dart';
 
 // ── Injection ────────────────────────────────────────────
 final monitoringDatasourceProvider = Provider((ref) =>
@@ -35,32 +35,37 @@ class MonitoringState {
       MonitoringState(
         logs: logs ?? this.logs,
         isLoading: isLoading ?? this.isLoading,
-        errorMessage: errorMessage,
+        errorMessage: errorMessage, // null remet à zéro
         totalEvents: totalEvents ?? this.totalEvents,
         todayEvents: todayEvents ?? this.todayEvents,
       );
 }
 
-// ── Provider ─────────────────────────────────────────────
+// ── Notifier ─────────────────────────────────────────────
+// ✅ Migré de StateNotifierProvider (legacy) vers NotifierProvider (API actuelle)
+// ✅ Suppression de l'import 'package:flutter_riverpod/legacy.dart'
 final monitoringProvider =
-    StateNotifierProvider<MonitoringNotifier, MonitoringState>((ref) {
-  return MonitoringNotifier(ref.read(monitoringDatasourceProvider));
-});
+    NotifierProvider<MonitoringNotifier, MonitoringState>(
+  MonitoringNotifier.new,
+);
 
-class MonitoringNotifier extends StateNotifier<MonitoringState> {
-  final MonitoringRemoteDatasource _datasource;
-
-  MonitoringNotifier(this._datasource) : super(const MonitoringState());
+class MonitoringNotifier extends Notifier<MonitoringState> {
+  // ✅ Pas de constructeur avec paramètres — injection via ref dans build()
+  @override
+  MonitoringState build() {
+    return const MonitoringState();
+  }
 
   Future<void> load({String? action, String? from, String? to}) async {
     state = state.copyWith(isLoading: true, errorMessage: null);
     try {
+      final datasource = ref.read(monitoringDatasourceProvider);
+
       final results = await Future.wait([
-        _datasource.getActivityLogs(action: action, from: from, to: to),
-        _datasource.getLoginStats(),
+        datasource.getActivityLogs(action: action, from: from, to: to),
+        datasource.getLoginStats(),
       ]);
 
-      // ── FIX: getActivityLogs retourne maintenant Map, pas List
       final result = results[0] as Map<String, dynamic>;
       final logs = result['logs'] as List<ActivityLogItem>;
       final total = result['total'] as int;
@@ -72,7 +77,7 @@ class MonitoringNotifier extends StateNotifier<MonitoringState> {
       state = state.copyWith(
         logs: logs,
         isLoading: false,
-        totalEvents: total, // ← vrai total API
+        totalEvents: total,
         todayEvents: todayTotal,
       );
     } catch (e) {

@@ -1,26 +1,12 @@
 /// -------------------------------------------------------
 /// USER MANAGEMENT PROVIDER
 /// -------------------------------------------------------
-/// State management Riverpod pour le Super Admin.
-///
-/// Gère :
-///   - Liste des users (avec filtres, pagination, refresh)
-///   - Détail d'un user
-///   - Création d'admin
-///   - Activation / désactivation / suppression
-///
-/// Architecture :
-///   Provider → Usecase → Repository → Datasource → API
-///
-/// Les écrans écoutent ce provider via ref.watch()
-/// et appellent les méthodes via ref.read().notifier
-/// -------------------------------------------------------
 library;
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_riverpod/legacy.dart'; 
-import '../../../../core/errors/failures.dart';  // ← AJOUTE CETTE LIGNE
+// ✅ Suppression de l'import legacy 'package:flutter_riverpod/legacy.dart'
 
+import '../../../../core/errors/failures.dart';
 import '../../../../core/providers/core_providers.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../data/datasources/user_management_remote_datasource.dart';
@@ -35,57 +21,42 @@ import '../../domain/usecases/deactivate_user_usecase.dart';
 import '../../domain/usecases/delete_user_usecase.dart';
 
 // ═══════════════════════════════════════════════════════
-// INJECTION DE DÉPENDANCES (chaîne de providers)
+// INJECTION DE DÉPENDANCES
 // ═══════════════════════════════════════════════════════
 
-/// Datasource → dépend de DioClient
 final userManagementDatasourceProvider = Provider((ref) {
-  return UserManagementRemoteDatasource(
-    client: ref.read(dioClientProvider),
-  );
+  return UserManagementRemoteDatasource(client: ref.read(dioClientProvider));
 });
 
-/// Repository → dépend de Datasource
 final userManagementRepositoryProvider = Provider((ref) {
-  return UserManagementRepositoryImpl(
-    ref.read(userManagementDatasourceProvider),
-  );
+  return UserManagementRepositoryImpl(ref.read(userManagementDatasourceProvider));
 });
 
-/// Usecases → dépendent de Repository
-final getAllUsersUsecaseProvider = Provider((ref) {
-  return GetAllUsersUsecase(ref.read(userManagementRepositoryProvider));
-});
+final getAllUsersUsecaseProvider = Provider((ref) =>
+    GetAllUsersUsecase(ref.read(userManagementRepositoryProvider)));
 
-final getAdminsUsecaseProvider = Provider((ref) {
-  return GetAdminsUsecase(ref.read(userManagementRepositoryProvider));
-});
+final getAdminsUsecaseProvider = Provider((ref) =>
+    GetAdminsUsecase(ref.read(userManagementRepositoryProvider)));
 
-final getUserByIdUsecaseProvider = Provider((ref) {
-  return GetUserByIdUsecase(ref.read(userManagementRepositoryProvider));
-});
+final getUserByIdUsecaseProvider = Provider((ref) =>
+    GetUserByIdUsecase(ref.read(userManagementRepositoryProvider)));
 
-final createAdminUsecaseProvider = Provider((ref) {
-  return CreateAdminUsecase(ref.read(userManagementRepositoryProvider));
-});
+final createAdminUsecaseProvider = Provider((ref) =>
+    CreateAdminUsecase(ref.read(userManagementRepositoryProvider)));
 
-final activateUserUsecaseProvider = Provider((ref) {
-  return ActivateUserUsecase(ref.read(userManagementRepositoryProvider));
-});
+final activateUserUsecaseProvider = Provider((ref) =>
+    ActivateUserUsecase(ref.read(userManagementRepositoryProvider)));
 
-final deactivateUserUsecaseProvider = Provider((ref) {
-  return DeactivateUserUsecase(ref.read(userManagementRepositoryProvider));
-});
+final deactivateUserUsecaseProvider = Provider((ref) =>
+    DeactivateUserUsecase(ref.read(userManagementRepositoryProvider)));
 
-final deleteUserUsecaseProvider = Provider((ref) {
-  return DeleteUserUsecase(ref.read(userManagementRepositoryProvider));
-});
+final deleteUserUsecaseProvider = Provider((ref) =>
+    DeleteUserUsecase(ref.read(userManagementRepositoryProvider)));
 
 // ═══════════════════════════════════════════════════════
 // STATE : LISTE DES USERS
 // ═══════════════════════════════════════════════════════
 
-/// État de la liste des utilisateurs
 class UserListState {
   final List<User> users;
   final bool isLoading;
@@ -117,43 +88,35 @@ class UserListState {
     int? totalUsers,
     int? currentPage,
     int? lastPage,
-  }) {
-    return UserListState(
-      users: users ?? this.users,
-      isLoading: isLoading ?? this.isLoading,
-      errorMessage: errorMessage,
-      filters: filters ?? this.filters,
-      totalUsers: totalUsers ?? this.totalUsers,
-      currentPage: currentPage ?? this.currentPage,
-      lastPage: lastPage ?? this.lastPage,
-    );
-  }
+  }) =>
+      UserListState(
+        users: users ?? this.users,
+        isLoading: isLoading ?? this.isLoading,
+        errorMessage: errorMessage,
+        filters: filters ?? this.filters,
+        totalUsers: totalUsers ?? this.totalUsers,
+        currentPage: currentPage ?? this.currentPage,
+        lastPage: lastPage ?? this.lastPage,
+      );
 }
 
-/// Provider principal pour la liste des users
+// ═══════════════════════════════════════════════════════
+// NOTIFIER : LISTE DES USERS
+// ✅ Migré de StateNotifierProvider vers NotifierProvider
+// ═══════════════════════════════════════════════════════
+
 final userListProvider =
-    StateNotifierProvider<UserListNotifier, UserListState>((ref) {
-  return UserListNotifier(ref.read(getAllUsersUsecaseProvider));
-});
+    NotifierProvider<UserListNotifier, UserListState>(UserListNotifier.new);
 
-final adminListProvider =
-    StateNotifierProvider<AdminListNotifier, UserListState>((ref) {
-  return AdminListNotifier(ref.read(getAdminsUsecaseProvider));
-});
+class UserListNotifier extends Notifier<UserListState> {
+  @override
+  UserListState build() => const UserListState();
 
-class UserListNotifier extends StateNotifier<UserListState> {
-  final GetAllUsersUsecase _getAllUsers;
+  GetAllUsersUsecase get _getAllUsers => ref.read(getAllUsersUsecaseProvider);
 
-  UserListNotifier(this._getAllUsers) : super(const UserListState());
-
-  /// Charger la première page (ou recharger)
   Future<void> loadUsers({UserFilters? filters}) async {
     final activeFilters = filters ?? state.filters;
-
-    state = state.copyWith(
-      isLoading: true,
-      filters: activeFilters,
-    );
+    state = state.copyWith(isLoading: true, filters: activeFilters);
 
     final result = await _getAllUsers(
       filters: UserFilters(
@@ -167,10 +130,7 @@ class UserListNotifier extends StateNotifier<UserListState> {
     );
 
     result.fold(
-      (failure) => state = state.copyWith(
-        isLoading: false,
-        errorMessage: failure.message,
-      ),
+      (failure) => state = state.copyWith(isLoading: false, errorMessage: failure.message),
       (paginated) => state = state.copyWith(
         users: paginated.users,
         isLoading: false,
@@ -181,10 +141,8 @@ class UserListNotifier extends StateNotifier<UserListState> {
     );
   }
 
-  /// Charger la page suivante (pagination infinie)
   Future<void> loadNextPage() async {
     if (!state.hasNextPage || state.isLoading) return;
-
     state = state.copyWith(isLoading: true);
 
     final result = await _getAllUsers(
@@ -199,10 +157,7 @@ class UserListNotifier extends StateNotifier<UserListState> {
     );
 
     result.fold(
-      (failure) => state = state.copyWith(
-        isLoading: false,
-        errorMessage: failure.message,
-      ),
+      (failure) => state = state.copyWith(isLoading: false, errorMessage: failure.message),
       (paginated) => state = state.copyWith(
         users: [...state.users, ...paginated.users],
         isLoading: false,
@@ -213,47 +168,39 @@ class UserListNotifier extends StateNotifier<UserListState> {
     );
   }
 
-  /// Rafraîchir la liste (pull-to-refresh)
-  Future<void> refresh() async {
-    await loadUsers(filters: state.filters);
-  }
+  Future<void> refresh() => loadUsers(filters: state.filters);
+  Future<void> applyFilters(UserFilters filters) => loadUsers(filters: filters);
 
-  /// Changer les filtres et recharger
-  Future<void> applyFilters(UserFilters filters) async {
-    await loadUsers(filters: filters);
-  }
-
-  /// Mettre à jour un user dans la liste après modification
   void updateUserInList(User updatedUser) {
-    final updatedList = state.users.map((u) {
-      return u.id == updatedUser.id ? updatedUser : u;
-    }).toList();
-    state = state.copyWith(users: updatedList);
+    state = state.copyWith(
+      users: state.users.map((u) => u.id == updatedUser.id ? updatedUser : u).toList(),
+    );
   }
 
-  /// Retirer un user de la liste après suppression
   void removeUserFromList(int userId) {
-    final updatedList = state.users.where((u) => u.id != userId).toList();
     state = state.copyWith(
-      users: updatedList,
+      users: state.users.where((u) => u.id != userId).toList(),
       totalUsers: state.totalUsers - 1,
     );
   }
 }
 
 // ═══════════════════════════════════════════════════════
-// STATE : DÉTAIL D'UN USER
+// NOTIFIER : LISTE DES ADMINS
+// ✅ Migré de StateNotifierProvider vers NotifierProvider
 // ═══════════════════════════════════════════════════════
 
-/// Provider pour le détail d'un user (par ID)
-class AdminListNotifier extends StateNotifier<UserListState> {
-  final GetAdminsUsecase _getAdmins;
+final adminListProvider =
+    NotifierProvider<AdminListNotifier, UserListState>(AdminListNotifier.new);
 
-  AdminListNotifier(this._getAdmins) : super(const UserListState());
+class AdminListNotifier extends Notifier<UserListState> {
+  @override
+  UserListState build() => const UserListState();
+
+  GetAdminsUsecase get _getAdmins => ref.read(getAdminsUsecaseProvider);
 
   Future<void> loadAdmins({UserFilters? filters}) async {
     final activeFilters = filters ?? state.filters;
-
     state = state.copyWith(isLoading: true, filters: activeFilters);
 
     final result = await _getAdmins(
@@ -266,10 +213,7 @@ class AdminListNotifier extends StateNotifier<UserListState> {
     );
 
     result.fold(
-      (failure) => state = state.copyWith(
-        isLoading: false,
-        errorMessage: failure.message,
-      ),
+      (failure) => state = state.copyWith(isLoading: false, errorMessage: failure.message),
       (paginated) => state = state.copyWith(
         users: paginated.users,
         isLoading: false,
@@ -280,14 +224,13 @@ class AdminListNotifier extends StateNotifier<UserListState> {
     );
   }
 
-  Future<void> refresh() async {
-    await loadAdmins(filters: state.filters);
-  }
-
-  Future<void> applyFilters(UserFilters filters) async {
-    await loadAdmins(filters: filters);
-  }
+  Future<void> refresh() => loadAdmins(filters: state.filters);
+  Future<void> applyFilters(UserFilters filters) => loadAdmins(filters: filters);
 }
+
+// ═══════════════════════════════════════════════════════
+// DETAIL D'UN USER
+// ═══════════════════════════════════════════════════════
 
 final userDetailProvider = FutureProvider.family<User?, int>((ref, id) async {
   final usecase = ref.read(getUserByIdUsecaseProvider);
@@ -299,24 +242,9 @@ final userDetailProvider = FutureProvider.family<User?, int>((ref, id) async {
 });
 
 // ═══════════════════════════════════════════════════════
-// ACTIONS : CRÉER / ACTIVER / DÉSACTIVER / SUPPRIMER
+// STATE : ACTIONS
 // ═══════════════════════════════════════════════════════
 
-/// Provider pour les actions sur un user
-/// Utilisé par les écrans détail et création
-final userActionsProvider =
-    StateNotifierProvider<UserActionsNotifier, UserActionState>((ref) {
-  return UserActionsNotifier(
-    createAdmin: ref.read(createAdminUsecaseProvider),
-    activateUser: ref.read(activateUserUsecaseProvider),
-    deactivateUser: ref.read(deactivateUserUsecaseProvider),
-    deleteUser: ref.read(deleteUserUsecaseProvider),
-    listNotifier: ref.read(userListProvider.notifier),
-    adminListNotifier: ref.read(adminListProvider.notifier),
-  );
-});
-
-/// État d'une action en cours
 class UserActionState {
   final bool isLoading;
   final String? successMessage;
@@ -334,10 +262,8 @@ class UserActionState {
   bool get hasSuccess => successMessage != null;
   bool get hasValidationErrors => validationErrors.isNotEmpty;
 
-  /// Récupère la première erreur d'un champ
   String? fieldError(String field) {
-    if (validationErrors.containsKey(field) &&
-        validationErrors[field]!.isNotEmpty) {
+    if (validationErrors.containsKey(field) && validationErrors[field]!.isNotEmpty) {
       return validationErrors[field]!.first;
     }
     return null;
@@ -348,43 +274,37 @@ class UserActionState {
     String? successMessage,
     String? errorMessage,
     Map<String, List<String>>? validationErrors,
-  }) {
-    return UserActionState(
-      isLoading: isLoading ?? this.isLoading,
-      successMessage: successMessage,
-      errorMessage: errorMessage,
-      validationErrors: validationErrors ?? this.validationErrors,
-    );
-  }
+  }) =>
+      UserActionState(
+        isLoading: isLoading ?? this.isLoading,
+        successMessage: successMessage,
+        errorMessage: errorMessage,
+        validationErrors: validationErrors ?? this.validationErrors,
+      );
 }
 
-class UserActionsNotifier extends StateNotifier<UserActionState> {
-  final CreateAdminUsecase _createAdmin;
-  final ActivateUserUsecase _activateUser;
-  final DeactivateUserUsecase _deactivateUser;
-  final DeleteUserUsecase _deleteUser;
-  final UserListNotifier _listNotifier;
-  final AdminListNotifier _adminListNotifier;
+// ═══════════════════════════════════════════════════════
+// NOTIFIER : ACTIONS
+// ✅ Migré de StateNotifierProvider vers NotifierProvider
+// ═══════════════════════════════════════════════════════
 
-  UserActionsNotifier({
-    required CreateAdminUsecase createAdmin,
-    required ActivateUserUsecase activateUser,
-    required DeactivateUserUsecase deactivateUser,
-    required DeleteUserUsecase deleteUser,
-    required UserListNotifier listNotifier,
-    required AdminListNotifier adminListNotifier,
-  })  : _createAdmin = createAdmin,
-        _activateUser = activateUser,
-        _deactivateUser = deactivateUser,
-        _deleteUser = deleteUser,
-        _listNotifier = listNotifier,
-        _adminListNotifier = adminListNotifier,
-        super(const UserActionState());
+final userActionsProvider =
+    NotifierProvider<UserActionsNotifier, UserActionState>(UserActionsNotifier.new);
 
-  /// Réinitialiser l'état (avant une nouvelle action)
+class UserActionsNotifier extends Notifier<UserActionState> {
+  @override
+  UserActionState build() => const UserActionState();
+
+  // Accesseurs via ref — pas de constructeur avec paramètres
+  CreateAdminUsecase get _createAdmin => ref.read(createAdminUsecaseProvider);
+  ActivateUserUsecase get _activateUser => ref.read(activateUserUsecaseProvider);
+  DeactivateUserUsecase get _deactivateUser => ref.read(deactivateUserUsecaseProvider);
+  DeleteUserUsecase get _deleteUser => ref.read(deleteUserUsecaseProvider);
+  UserListNotifier get _listNotifier => ref.read(userListProvider.notifier);
+  AdminListNotifier get _adminListNotifier => ref.read(adminListProvider.notifier);
+
   void reset() => state = const UserActionState();
 
-  /// Créer un nouvel admin
   Future<bool> createAdmin({
     required String name,
     required String email,
@@ -411,19 +331,12 @@ class UserActionsNotifier extends StateNotifier<UserActionState> {
             validationErrors: failure.errors,
           );
         } else {
-          state = state.copyWith(
-            isLoading: false,
-            errorMessage: failure.message,
-          );
+          state = state.copyWith(isLoading: false, errorMessage: failure.message);
         }
         return false;
       },
       (user) {
-        state = state.copyWith(
-          isLoading: false,
-          successMessage: 'Admin créé avec succès',
-        );
-        // Rafraîchir la liste
+        state = state.copyWith(isLoading: false, successMessage: 'Admin créé avec succès');
         _listNotifier.refresh();
         _adminListNotifier.refresh();
         return true;
@@ -431,75 +344,48 @@ class UserActionsNotifier extends StateNotifier<UserActionState> {
     );
   }
 
-  /// Activer un compte
   Future<bool> activateUser(int id) async {
     state = state.copyWith(isLoading: true);
-
     final result = await _activateUser(id);
-
     return result.fold(
       (failure) {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: failure.message,
-        );
+        state = state.copyWith(isLoading: false, errorMessage: failure.message);
         return false;
       },
       (user) {
-        state = state.copyWith(
-          isLoading: false,
-          successMessage: 'Compte activé',
-        );
+        state = state.copyWith(isLoading: false, successMessage: 'Compte activé');
         _listNotifier.updateUserInList(user);
         return true;
       },
     );
   }
 
-  /// Désactiver un compte
   Future<bool> deactivateUser(int id) async {
     state = state.copyWith(isLoading: true);
-
     final result = await _deactivateUser(id);
-
     return result.fold(
       (failure) {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: failure.message,
-        );
+        state = state.copyWith(isLoading: false, errorMessage: failure.message);
         return false;
       },
       (user) {
-        state = state.copyWith(
-          isLoading: false,
-          successMessage: 'Compte désactivé',
-        );
+        state = state.copyWith(isLoading: false, successMessage: 'Compte désactivé');
         _listNotifier.updateUserInList(user);
         return true;
       },
     );
   }
 
-  /// Supprimer un utilisateur
   Future<bool> deleteUser(int id) async {
     state = state.copyWith(isLoading: true);
-
     final result = await _deleteUser(id);
-
     return result.fold(
       (failure) {
-        state = state.copyWith(
-          isLoading: false,
-          errorMessage: failure.message,
-        );
+        state = state.copyWith(isLoading: false, errorMessage: failure.message);
         return false;
       },
       (_) {
-        state = state.copyWith(
-          isLoading: false,
-          successMessage: 'Utilisateur supprimé',
-        );
+        state = state.copyWith(isLoading: false, successMessage: 'Utilisateur supprimé');
         _listNotifier.removeUserFromList(id);
         return true;
       },

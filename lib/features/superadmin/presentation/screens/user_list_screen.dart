@@ -353,7 +353,7 @@ class _UsersListScreenState extends ConsumerState<UsersListScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (_) => UserDetailsScreen(user: users[i]),
+                  builder: (_) => UserDetailsScreen(userId: int.parse(users[i].id)),
                 ),
               );
             }

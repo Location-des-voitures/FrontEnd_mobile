@@ -1,30 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/theme/app_theme.dart'; // ✅ Import AppColors
 
 /// -------------------------------------------------------
 /// ONBOARDING SCREEN — 3 pages swipables
-/// -------------------------------------------------------
-/// Page 1 : "Premium Car Rental"
-///   - Header : rRw (gauche) + SKIP (droite)
-///   - Image voiture bleue sur fond noir (coins arrondis)
-///   - Tag "PREMIER SELECTION"
-///   - Titre + description
-///   - Dots (barre active) + bouton "NEXT →" à droite
-///
-/// Page 2 : "Easy Booking in Seconds"
-///   - Header : ← (retour) + rRw (centre) + SKIP (droite)
-///   - Fond gris avec voiture en arrière-plan
-///   - Carte blanche avec icône chrono "10"
-///   - Titre centré + description centrée
-///   - Dots centrés + bouton "Next" pleine largeur
-///
-/// Page 3 : "Track Your Reservations"
-///   - Header : ← + rRw + SKIP (grisé)
-///   - Carte avec "ACTIVE TRACKING", pin map,
-///     card "Porsche Taycan / Electric Performance"
-///     progress bar + "12 MIN AWAY" + "2.4 MILES"
-///   - Titre + description
-///   - Dots + bouton "Get Started" pleine largeur
 /// -------------------------------------------------------
 
 class OnboardingScreen extends StatefulWidget {
@@ -60,7 +39,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F7F4),
+      backgroundColor: AppColors.background, // ✅ était Color(0xFFF8F7F4)
       body: SafeArea(
         child: Column(
           children: [
@@ -70,46 +49,42 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  // ← retour (page > 0)
                   if (_page > 0)
                     GestureDetector(
                       onTap: () => _controller.previousPage(
                         duration: const Duration(milliseconds: 350),
                         curve: Curves.easeInOut,
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.arrow_back,
                         size: 22,
-                        color: Color(0xFF3B5BDB),
+                        color: AppColors.primary, // ✅ était Color(0xFF3B5BDB)
                       ),
                     )
                   else
-                    // Page 1 : logo rRw à gauche
-                    const Text(
+                    Text(
                       'FlotTrack',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w800,
-                        color: Color(0xFF3B5BDB),
+                        color: AppColors.primary, // ✅ était Color(0xFF3B5BDB)
                         letterSpacing: -0.5,
                       ),
                     ),
 
-                  // rRw centré (pages 2 et 3)
                   if (_page > 0)
-                    const Text(
+                    Text(
                       'FlotTrack',
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF3B5BDB),
+                        color: AppColors.primary, // ✅ était Color(0xFF3B5BDB)
                         letterSpacing: -0.5,
                       ),
                     )
                   else
                     const SizedBox.shrink(),
 
-                  // SKIP
                   GestureDetector(
                     onTap: _goToLogin,
                     child: Text(
@@ -118,9 +93,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         fontSize: 14,
                         fontWeight: FontWeight.w600,
                         letterSpacing: 1,
+                        // ✅ était Color(0xFF3B5BDB).withValues(alpha: 0.4)
                         color: _page == 2
-                            ? const Color(0xFF3B5BDB).withValues(alpha: 0.4)
-                            : const Color(0xFF3B5BDB),
+                            ? AppColors.primary.withValues(alpha: 0.4)
+                            : AppColors.primary,
                       ),
                     ),
                   ),
@@ -153,7 +129,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // PAGE 1 — Premium Car Rental
+  // PAGE 1
   // ═══════════════════════════════════════════════════════
   Widget _page1() {
     return Padding(
@@ -162,66 +138,55 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 12),
-
-          // Image voiture sur fond noir
           Expanded(
             flex: 5,
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFF0A0A12),
+                color: AppColors.textPrimary, // ✅ était Color(0xFF0A0A12) ≈ textPrimary
                 borderRadius: BorderRadius.circular(20),
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-               
                 child: Image.asset(
-  'assets/images/splash.jpg',
-  fit: BoxFit.cover,
-  width: double.infinity,
-),
+                  'assets/images/splash.jpg',
+                  fit: BoxFit.cover,
+                  width: double.infinity,
+                ),
               ),
             ),
           ),
-
           const SizedBox(height: 28),
-
-          // Tag
           Text(
             'PREMIER SELECTION',
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
               letterSpacing: 2.5,
-              color: const Color(0xFF3B5BDB).withValues(alpha: 0.7),
+              color: AppColors.primary.withValues(alpha: 0.7), // ✅
             ),
           ),
           const SizedBox(height: 12),
-
-          // Titre
-          const Text(
+          Text(
             'Premium Car\nRental',
             style: TextStyle(
               fontSize: 40,
               fontWeight: FontWeight.w700,
-              color: Color(0xFF1A1A2E),
+              color: AppColors.textPrimary, // ✅ était Color(0xFF1A1A2E)
               height: 1.1,
               letterSpacing: -1,
             ),
           ),
           const SizedBox(height: 16),
-
-          // Description
           Text(
             'Experience the best fleet in the city with our curated collection of high-end performance vehicles.',
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w400,
-              color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+              color: AppColors.textPrimary.withValues(alpha: 0.5), // ✅
               height: 1.6,
             ),
           ),
-
           const Spacer(),
         ],
       ),
@@ -229,14 +194,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // PAGE 2 — Easy Booking in Seconds
+  // PAGE 2
   // ═══════════════════════════════════════════════════════
   Widget _page2() {
     return Column(
       children: [
         const SizedBox(height: 12),
-
-        // Zone visuelle avec fond gris voiture
         Expanded(
           flex: 5,
           child: Padding(
@@ -244,51 +207,40 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFE8E7E4),
+                color: AppColors.surfaceVariant, // ✅ était Color(0xFFE8E7E4)
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Stack(
                 children: [
-                  // TODO: Image voiture en arrière-plan
-                  // Positioned.fill(
-                  //   child: Image.asset('assets/images/onboarding_bg.png',
-                  //     fit: BoxFit.cover, opacity: const AlwaysStoppedAnimation(0.3)),
-                  // ),
-
-                  // Petite icône rRw en haut à gauche
                   Positioned(
                     top: 20,
                     left: 20,
                     child: Icon(
                       Icons.auto_awesome,
                       size: 20,
-                      color: const Color(0xFF3B5BDB).withValues(alpha: 0.3),
+                      color: AppColors.primary.withValues(alpha: 0.3), // ✅
                     ),
                   ),
-
-                  // Petite icône éclair en bas à droite
                   Positioned(
                     bottom: 20,
                     right: 20,
                     child: Icon(
                       Icons.bolt,
                       size: 24,
-                      color: const Color(0xFF9CA3AF).withValues(alpha: 0.4),
+                      color: AppColors.textSecondary.withValues(alpha: 0.4), // ✅ était Color(0xFF9CA3AF)
                     ),
                   ),
-
-                  // Carte blanche avec icône chrono au centre
                   Center(
                     child: Container(
                       padding: const EdgeInsets.all(28),
                       decoration: BoxDecoration(
-                        color: const Color(0xFFF0F2FF),
+                        color: AppColors.primaryLight.withValues(alpha: 0.15), // ✅ était Color(0xFFF0F2FF)
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.timer_outlined,
                         size: 48,
-                        color: Color(0xFF3B5BDB),
+                        color: AppColors.primary, // ✅
                       ),
                     ),
                   ),
@@ -297,24 +249,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 32),
-
-        // Titre centré
-        const Text(
+        Text(
           'Easy Booking in\nSeconds',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A2E),
+            color: AppColors.textPrimary, // ✅ était Color(0xFF1A1A2E)
             height: 1.15,
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
-
-        // Description centrée
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Text(
@@ -323,26 +270,23 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w400,
-              color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+              color: AppColors.textPrimary.withValues(alpha: 0.5), // ✅
               height: 1.6,
             ),
           ),
         ),
-
         const Spacer(),
       ],
     );
   }
 
   // ═══════════════════════════════════════════════════════
-  // PAGE 3 — Track Your Reservations
+  // PAGE 3
   // ═══════════════════════════════════════════════════════
   Widget _page3() {
     return Column(
       children: [
         const SizedBox(height: 12),
-
-        // Zone visuelle avec carte map
         Expanded(
           flex: 5,
           child: Padding(
@@ -350,20 +294,16 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: Container(
               width: double.infinity,
               decoration: BoxDecoration(
-                color: const Color(0xFFF2F1EE),
+                color: AppColors.surfaceVariant, // ✅ était Color(0xFFF2F1EE)
                 borderRadius: BorderRadius.circular(24),
               ),
               child: Stack(
                 children: [
-                  // Badge "ACTIVE TRACKING"
                   Positioned(
                     top: 20,
                     left: 20,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(20),
@@ -374,8 +314,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           Container(
                             width: 8,
                             height: 8,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF3B5BDB),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary, // ✅
                               shape: BoxShape.circle,
                             ),
                           ),
@@ -386,24 +326,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               fontSize: 11,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 1.5,
-                              color: const Color(0xFF1A1A2E).withValues(alpha: 0.7),
+                              color: AppColors.textPrimary.withValues(alpha: 0.7), // ✅
                             ),
                           ),
                         ],
                       ),
                     ),
                   ),
-
-                  // Pin map au centre
                   Center(
                     child: Icon(
                       Icons.location_on,
                       size: 80,
-                      color: const Color(0xFF9CA3AF).withValues(alpha: 0.5),
+                      color: AppColors.textSecondary.withValues(alpha: 0.5), // ✅ était Color(0xFF9CA3AF)
                     ),
                   ),
-
-                  // Carte info "Porsche Taycan" en bas
                   Positioned(
                     bottom: 16,
                     left: 16,
@@ -418,11 +354,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          // Nom + icône voiture
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
@@ -430,15 +365,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                     style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.w700,
-                                      color: Color(0xFF1A1A2E),
+                                      color: AppColors.textPrimary, // ✅
                                     ),
                                   ),
-                                  SizedBox(height: 2),
+                                  const SizedBox(height: 2),
                                   Text(
                                     'Electric Performance',
                                     style: TextStyle(
                                       fontSize: 13,
-                                      color: Color(0xFF6B7280),
+                                      color: AppColors.textSecondary, // ✅ était Color(0xFF6B7280)
                                     ),
                                   ),
                                 ],
@@ -446,27 +381,21 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               Icon(
                                 Icons.directions_car,
                                 size: 24,
-                                color: const Color(0xFF3B5BDB).withValues(alpha: 0.7),
+                                color: AppColors.primary.withValues(alpha: 0.7), // ✅
                               ),
                             ],
                           ),
                           const SizedBox(height: 12),
-
-                          // Progress bar
                           ClipRRect(
                             borderRadius: BorderRadius.circular(2),
                             child: LinearProgressIndicator(
                               value: 0.35,
                               minHeight: 3,
-                              backgroundColor: const Color(0xFFE5E7EB),
-                              valueColor: const AlwaysStoppedAnimation<Color>(
-                                Color(0xFF3B5BDB),
-                              ),
+                              backgroundColor: AppColors.divider, // ✅ était Color(0xFFE5E7EB)
+                              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary), // ✅
                             ),
                           ),
                           const SizedBox(height: 10),
-
-                          // "12 MIN AWAY" + "2.4 MILES"
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -476,7 +405,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 1,
-                                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+                                  color: AppColors.textPrimary.withValues(alpha: 0.5), // ✅
                                 ),
                               ),
                               Text(
@@ -485,7 +414,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                                   fontSize: 11,
                                   fontWeight: FontWeight.w600,
                                   letterSpacing: 1,
-                                  color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+                                  color: AppColors.textPrimary.withValues(alpha: 0.5), // ✅
                                 ),
                               ),
                             ],
@@ -499,24 +428,19 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             ),
           ),
         ),
-
         const SizedBox(height: 32),
-
-        // Titre centré
-        const Text(
+        Text(
           'Track Your\nReservations',
           textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 36,
             fontWeight: FontWeight.w700,
-            color: Color(0xFF1A1A2E),
+            color: AppColors.textPrimary, // ✅
             height: 1.15,
             letterSpacing: -0.5,
           ),
         ),
         const SizedBox(height: 16),
-
-        // Description centrée
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 40),
           child: Text(
@@ -525,37 +449,33 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w400,
-              color: const Color(0xFF1A1A2E).withValues(alpha: 0.5),
+              color: AppColors.textPrimary.withValues(alpha: 0.5), // ✅
               height: 1.6,
             ),
           ),
         ),
-
         const Spacer(),
       ],
     );
   }
 
   // ═══════════════════════════════════════════════════════
-  // BOTTOM — Page 1 (dots à gauche + NEXT → à droite)
+  // BOTTOM — Page 1
   // ═══════════════════════════════════════════════════════
   Widget _bottomPage1() {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        // Dots
         _buildDots(),
-
-        // Bouton "NEXT →"
         SizedBox(
           height: 54,
           child: ElevatedButton(
             onPressed: _next,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B5BDB),
+              backgroundColor: AppColors.primary, // ✅
               foregroundColor: Colors.white,
               elevation: 6,
-              shadowColor: const Color(0xFF3B5BDB).withValues(alpha: 0.35),
+              shadowColor: AppColors.primary.withValues(alpha: 0.35), // ✅
               padding: const EdgeInsets.symmetric(horizontal: 36),
               minimumSize: const Size(0, 54),
               shape: RoundedRectangleBorder(
@@ -565,14 +485,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
             child: const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
-                  'NEXT',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 1.5,
-                  ),
-                ),
+                Text('NEXT', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
                 SizedBox(width: 10),
                 Icon(Icons.arrow_forward, size: 18),
               ],
@@ -584,39 +497,30 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // BOTTOM — Pages 2 et 3 (dots centrés + bouton full width)
+  // BOTTOM — Pages 2 et 3
   // ═══════════════════════════════════════════════════════
   Widget _bottomPages2and3() {
     final isLast = _page == 2;
-
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // Dots centrés
         _buildDots(centered: true),
         const SizedBox(height: 24),
-
-        // Bouton pleine largeur
         SizedBox(
           width: double.infinity,
           height: 56,
           child: ElevatedButton(
             onPressed: _next,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF3B5BDB),
+              backgroundColor: AppColors.primary, // ✅
               foregroundColor: Colors.white,
               elevation: isLast ? 6 : 4,
-              shadowColor: const Color(0xFF3B5BDB).withValues(alpha: 0.3),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
+              shadowColor: AppColors.primary.withValues(alpha: 0.3), // ✅
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             ),
             child: Text(
               isLast ? 'Get Started' : 'Next',
-              style: const TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.w600,
-              ),
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
             ),
           ),
         ),
@@ -625,12 +529,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   // ═══════════════════════════════════════════════════════
-  // DOTS INDICATOR
+  // DOTS
   // ═══════════════════════════════════════════════════════
   Widget _buildDots({bool centered = false}) {
     return Row(
-      mainAxisAlignment:
-          centered ? MainAxisAlignment.center : MainAxisAlignment.start,
+      mainAxisAlignment: centered ? MainAxisAlignment.center : MainAxisAlignment.start,
       children: List.generate(3, (i) {
         final isActive = _page == i;
         return AnimatedContainer(
@@ -640,9 +543,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           height: 4,
           width: isActive ? 28 : 8,
           decoration: BoxDecoration(
+            // ✅ AppColors.primary au lieu de Color(0xFF3B5BDB)
             color: isActive
-                ? const Color(0xFF3B5BDB)
-                : const Color(0xFF3B5BDB).withValues(alpha: 0.2),
+                ? AppColors.primary
+                : AppColors.primary.withValues(alpha: 0.2),
             borderRadius: BorderRadius.circular(2),
           ),
         );

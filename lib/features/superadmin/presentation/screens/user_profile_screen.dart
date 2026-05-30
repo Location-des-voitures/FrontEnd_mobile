@@ -14,7 +14,7 @@ class UserProfileScreen extends StatelessWidget {
       appBar: AppBar(
         title: Text(user.fullName),
         backgroundColor: Colors.white,
-        foregroundColor: AppColors.textPrimary,
+        foregroundColor: const Color.fromARGB(255, 3, 3, 13),
         elevation: 0,
       ),
       body: Center(

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'user_list_screen.dart' show UserModel;
+import 'admin_detail_screen.dart';
 import '../../../../core/theme/app_theme.dart';
 import '../../../auth/domain/entities/user.dart';
 import '../../domain/repositories/user_management_repository.dart';
@@ -110,17 +112,27 @@ class _LoueurListScreenState extends ConsumerState<LoueurListScreen> {
                       else if (state.users.isEmpty)
                         _StateMessage(
                           icon: Icons.badge_outlined,
-                          message: 'No loueurs found.',
-                          actionLabel: 'Add Loueur',
+                          message: 'No admin found.',
+                          actionLabel: 'Add admin',
                           onAction: _openAddLoueur,
                         )
                       else
                         ...state.users.map(
-                          (admin) => Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: _LoueurCard(admin: admin),
-                          ),
-                        ),
+  (admin) => Padding(
+    padding: const EdgeInsets.only(bottom: 12),
+    child: GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AdminDetailScreen(
+            user: UserModel.fromDomain(admin),
+          ),
+        ),
+      ),
+      child: _LoueurCard(admin: admin),
+    ),
+  ),
+),
                       const SizedBox(height: 80),
                     ],
                   ),
@@ -159,7 +171,7 @@ class _LoueurListScreenState extends ConsumerState<LoueurListScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Loueurs',
+                'Admins',
                 style: AppTextStyles.h2.copyWith(
                   fontSize: 22,
                   fontWeight: FontWeight.w800,
@@ -178,7 +190,7 @@ class _LoueurListScreenState extends ConsumerState<LoueurListScreen> {
           TextButton(
             onPressed: _openAddLoueur,
             child: const Text(
-              'Add Loueur',
+              'Add Admin',
               style: TextStyle(
                 color: AppColors.primary,
                 fontSize: 15,
@@ -242,7 +254,7 @@ class _LoueurListScreenState extends ConsumerState<LoueurListScreen> {
               },
               style: AppTextStyles.bodyMedium,
               decoration: const InputDecoration(
-                hintText: 'Search loueurs by name or email...',
+                hintText: 'Search admins by name or email...',
                 hintStyle: TextStyle(color: AppColors.textHint, fontSize: 13),
                 border: InputBorder.none,
                 enabledBorder: InputBorder.none,

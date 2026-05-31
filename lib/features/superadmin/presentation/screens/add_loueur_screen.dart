@@ -56,7 +56,7 @@ class _AddLoueurScreenState extends ConsumerState<AddLoueurScreen> {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNav(),
+   
     );
   }
 
@@ -78,7 +78,7 @@ class _AddLoueurScreenState extends ConsumerState<AddLoueurScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('New Loueur',
+              Text('New Admin',
                   style: AppTextStyles.h2.copyWith(fontSize: 22, fontWeight: FontWeight.w800)),
               Text('Create a new fleet manager account',
                   style: AppTextStyles.bodySmall.copyWith(fontSize: 13, color: AppColors.textSecondary)),
@@ -290,7 +290,7 @@ class _AddLoueurScreenState extends ConsumerState<AddLoueurScreen> {
               : const Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('Create Loueur',
+                    Text('Create Admin',
                         style: TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.w700,
@@ -350,7 +350,7 @@ Future<void> _handleCreate() async {
   if (success) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Loueur "${_nameCtrl.text.trim()}" created!'),
+        content: Text('Admin "${_nameCtrl.text.trim()}" created!'),
         backgroundColor: AppColors.success,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -362,42 +362,7 @@ Future<void> _handleCreate() async {
   // Si échec → le provider a errorMessage, on l'affiche
 }
 
-  // ── Bottom Nav ─────────────────────────────────────────
-  Widget _buildBottomNav() {
-    const items = [
-      (Icons.directions_car_outlined, 'FLEET'),
-      (Icons.calendar_today_outlined, 'RENTALS'),
-      (Icons.badge_outlined, 'TEAM'),
-      (Icons.settings_outlined, 'SETTINGS'),
-    ];
-    const activeIndex = 2;
-    return Container(
-      height: 68,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        boxShadow: [BoxShadow(color: Colors.black.withAlpha(14), blurRadius: 12, offset: const Offset(0, -2))],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: List.generate(items.length, (i) {
-          final active = i == activeIndex;
-          return Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(items[i].$1, size: 22, color: active ? AppColors.primary : AppColors.textHint),
-              const SizedBox(height: 3),
-              Text(items[i].$2,
-                  style: TextStyle(
-                    fontSize: 9, fontWeight: active ? FontWeight.w700 : FontWeight.w500,
-                    color: active ? AppColors.primary : AppColors.textHint,
-                    letterSpacing: 0.5,
-                  )),
-            ],
-          );
-        }),
-      ),
-    );
-  }
+  
 }
 
 // ─── Sub-widgets ─────────────────────────────────────────

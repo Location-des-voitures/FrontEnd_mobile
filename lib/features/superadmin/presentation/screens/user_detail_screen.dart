@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../../core/theme/app_theme.dart';
 import 'user_list_screen.dart';
 
+
 // ─── Model ────────────────────────────────────────────────────────────────────
 
 class UserDetail {
@@ -73,7 +74,7 @@ class UserService {
 
   static Future<UserDetail> fetchUser(int id) async {
     final res = await http.get(
-      Uri.parse('$_baseUrl/admin/users/$id'),
+      Uri.parse('$_baseUrl/super-admin/users/$id'),
       headers: await _headers(),
     );
     if (res.statusCode == 200) {
@@ -85,7 +86,7 @@ class UserService {
 
   static Future<void> activateUser(int id) async {
     final res = await http.put(
-      Uri.parse('$_baseUrl/admin/users/$id/activate'),
+      Uri.parse('$_baseUrl/super-admin/users/$id/activate'),
       headers: await _headers(),
     );
     if (res.statusCode != 200) {
@@ -96,7 +97,7 @@ class UserService {
 
   static Future<void> deactivateUser(int id) async {
     final res = await http.put(
-      Uri.parse('$_baseUrl/admin/users/$id/deactivate'),
+      Uri.parse('$_baseUrl/super-admin/users/$id/deactivate'),
       headers: await _headers(),
     );
     if (res.statusCode != 200) {
@@ -107,7 +108,7 @@ class UserService {
 
   static Future<void> deleteUser(int id) async {
     final res = await http.delete(
-      Uri.parse('$_baseUrl/admin/users/$id'),
+      Uri.parse('$_baseUrl/super-admin/users/$id'),
       headers: await _headers(),
     );
     if (res.statusCode != 200) {

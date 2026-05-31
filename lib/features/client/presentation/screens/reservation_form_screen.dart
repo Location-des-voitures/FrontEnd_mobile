@@ -8,11 +8,12 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
+import 'booking_confirmation_screen.dart';
 
 import '../../../../core/theme/app_theme.dart';
 
 // ─────────────────────────────────────────────────────────────
-// MODELS (réutilisés depuis les screens précédents)
+// MODELS
 // ─────────────────────────────────────────────────────────────
 
 class CarSummary {
@@ -58,6 +59,7 @@ class ReservationApiService {
   }
 
   /// POST /api/client/reservations  (multipart/form-data)
+  /// FIX: retourne maintenant le body complet pour que _submit() puisse l'utiliser
   static Future<Map<String, dynamic>> submitReservation({
     required int carId,
     required String startDate,
@@ -77,13 +79,11 @@ class ReservationApiService {
     final uri = Uri.parse('$_baseUrl/client/reservations');
     final request = http.MultipartRequest('POST', uri);
 
-    // Headers
     if (token != null) {
       request.headers['Authorization'] = 'Bearer $token';
     }
     request.headers['Accept'] = 'application/json';
 
-    // Text fields
     request.fields['car_id'] = carId.toString();
     request.fields['start_date'] = startDate;
     request.fields['end_date'] = endDate;
@@ -91,38 +91,52 @@ class ReservationApiService {
     request.fields['email'] = email;
     request.fields['phone'] = phone;
     request.fields['address'] = address;
-    if (birthDate != null && birthDate.isNotEmpty) request.fields['birth_date'] = birthDate;
-    if (licenseNumber != null && licenseNumber.isNotEmpty) request.fields['license_number'] = licenseNumber;
-    if (licenseExpiration != null && licenseExpiration.isNotEmpty) request.fields['license_expiration'] = licenseExpiration;
+    if (birthDate != null && birthDate.isNotEmpty) {
+      request.fields['birth_date'] = birthDate;
+    }
+    if (licenseNumber != null && licenseNumber.isNotEmpty) {
+      request.fields['license_number'] = licenseNumber;
+    }
+    if (licenseExpiration != null && licenseExpiration.isNotEmpty) {
+      request.fields['license_expiration'] = licenseExpiration;
+    }
 
-    // File: CIN
     final cinExt = cinFile.path.split('.').last.toLowerCase();
-    request.files.add(await http.MultipartFile.fromPath(
-      'cin',
-      cinFile.path,
-      contentType: _mediaType(cinExt),
-    ));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'cin',
+        cinFile.path,
+        contentType: _mediaType(cinExt),
+      ),
+    );
 
-    // File: Driving License
     final dlExt = drivingLicenseFile.path.split('.').last.toLowerCase();
-    request.files.add(await http.MultipartFile.fromPath(
-      'driving_license',
-      drivingLicenseFile.path,
-      contentType: _mediaType(dlExt),
-    ));
+    request.files.add(
+      await http.MultipartFile.fromPath(
+        'driving_license',
+        drivingLicenseFile.path,
+        contentType: _mediaType(dlExt),
+      ),
+    );
 
     final streamed = await request.send();
     final response = await http.Response.fromStream(streamed);
-    final body = json.decode(response.body) as Map<String, dynamic>;
+
+    // FIX: body est déclaré ici dans le service, pas dans _submit()
+    final responseBody = json.decode(response.body) as Map<String, dynamic>;
 
     if (response.statusCode == 201) {
-      return body;
+      return responseBody; // ← retourné proprement
     }
 
-    // Handle validation errors (422) or other errors
-    final message = body['message'] as String? ?? 'Une erreur est survenue.';
-    final errors = body['errors'] as Map<String, dynamic>?;
-    throw _ApiException(message: message, errors: errors, statusCode: response.statusCode);
+    final message =
+        responseBody['message'] as String? ?? 'Une erreur est survenue.';
+    final errors = responseBody['errors'] as Map<String, dynamic>?;
+    throw _ApiException(
+      message: message,
+      errors: errors,
+      statusCode: response.statusCode,
+    );
   }
 
   static MediaType _mediaType(String ext) {
@@ -144,9 +158,12 @@ class _ApiException implements Exception {
   final Map<String, dynamic>? errors;
   final int statusCode;
 
-  _ApiException({required this.message, this.errors, required this.statusCode});
+  _ApiException({
+    required this.message,
+    this.errors,
+    required this.statusCode,
+  });
 
-  /// Returns first error string for a given field, or null.
   String? fieldError(String field) {
     final list = errors?[field];
     if (list is List && list.isNotEmpty) return list.first as String;
@@ -180,11 +197,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   final _formKey = GlobalKey<FormState>();
   final _picker = ImagePicker();
 
-  // ── Step tracking ────────────────────────────────────
-  // 0 = Personal Info, 1 = Documents, 2 = Review & Confirm
   int _step = 0;
 
-  // ── Controllers ──────────────────────────────────────
   final _fullNameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
@@ -193,18 +207,13 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   final _licenseNumberCtrl = TextEditingController();
   final _licenseExpirationCtrl = TextEditingController();
 
-  // ── Date states ──────────────────────────────────────
   DateTime? _birthDate;
   DateTime? _licenseExpiration;
 
-  // ── File states ──────────────────────────────────────
   File? _cinFile;
   File? _licenseFile;
 
-  // ── API error fields ─────────────────────────────────
   Map<String, String> _fieldErrors = {};
-
-  // ── Submission ───────────────────────────────────────
   bool _submitting = false;
 
   @override
@@ -225,18 +234,16 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
 
   String _fmtDate(DateTime dt) => DateFormat('d MMM yyyy').format(dt);
   String _fmtApi(DateTime dt) => DateFormat('yyyy-MM-dd').format(dt);
-
   String _fileName(File f) => f.path.split('/').last;
 
-  Future<void> _pickDate({
-    required bool isBirthDate,
-  }) async {
+  Future<void> _pickDate({required bool isBirthDate}) async {
     final now = DateTime.now();
     final initial = isBirthDate
         ? (_birthDate ?? DateTime(1990, 1, 1))
         : (_licenseExpiration ?? now.add(const Duration(days: 365)));
     final first = isBirthDate ? DateTime(1940) : now;
-    final last = isBirthDate ? now : now.add(const Duration(days: 365 * 20));
+    final last =
+        isBirthDate ? now : now.add(const Duration(days: 365 * 20));
 
     final picked = await showDatePicker(
       context: context,
@@ -274,7 +281,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       context: context,
       backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXL)),
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXL)),
       ),
       builder: (_) => SafeArea(
         child: Padding(
@@ -298,7 +306,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 label: 'Prendre une photo',
                 onTap: () async {
                   Navigator.pop(context);
-                  await _pickFromSource(isCin: isCin, source: ImageSource.camera);
+                  await _pickFromSource(
+                      isCin: isCin, source: ImageSource.camera);
                 },
               ),
               const Divider(height: 1),
@@ -307,7 +316,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 label: 'Galerie photos',
                 onTap: () async {
                   Navigator.pop(context);
-                  await _pickFromSource(isCin: isCin, source: ImageSource.gallery);
+                  await _pickFromSource(
+                      isCin: isCin, source: ImageSource.gallery);
                 },
               ),
             ],
@@ -317,24 +327,34 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
     );
   }
 
-  Widget _sheetTile({required IconData icon, required String label, required VoidCallback onTap}) {
+  Widget _sheetTile({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: Container(
         width: 40,
         height: 40,
         decoration: BoxDecoration(
-          color: AppColors.primary.withOpacity(0.08),
+          color: AppColors.primary.withValues(alpha: 0.08),
           borderRadius: BorderRadius.circular(AppSizes.radiusMD),
         ),
         child: Icon(icon, color: AppColors.primary, size: 20),
       ),
-      title: Text(label, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+      title: Text(
+        label,
+        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+      ),
       onTap: onTap,
     );
   }
 
-  Future<void> _pickFromSource({required bool isCin, required ImageSource source}) async {
+  Future<void> _pickFromSource({
+    required bool isCin,
+    required ImageSource source,
+  }) async {
     final picked = await _picker.pickImage(source: source, imageQuality: 85);
     if (picked == null) return;
     setState(() {
@@ -358,7 +378,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
     }
     if (_step == 1) {
       if (_cinFile == null || _licenseFile == null) {
-        _showSnack('Veuillez uploader les deux documents requis.', isError: true);
+        _showSnack('Veuillez uploader les deux documents requis.',
+            isError: true);
         return;
       }
     }
@@ -371,6 +392,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
 
   // ─────────────────────────────────────────────────────
   // SUBMIT
+  // FIX: le résultat de submitReservation est capturé dans `apiResponse`
+  //      (plus de référence à `body` qui n'existe pas dans ce scope)
   // ─────────────────────────────────────────────────────
 
   Future<void> _submit() async {
@@ -381,7 +404,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
     });
 
     try {
-      await ReservationApiService.submitReservation(
+      // FIX ① : on capture la valeur retournée par le service
+      final apiResponse = await ReservationApiService.submitReservation(
         carId: widget.car.id,
         startDate: _fmtApi(widget.startDate),
         endDate: _fmtApi(widget.endDate),
@@ -392,12 +416,31 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
         cinFile: _cinFile!,
         drivingLicenseFile: _licenseFile!,
         birthDate: _birthDate != null ? _fmtApi(_birthDate!) : null,
-        licenseNumber: _licenseNumberCtrl.text.trim().isEmpty ? null : _licenseNumberCtrl.text.trim(),
-        licenseExpiration: _licenseExpiration != null ? _fmtApi(_licenseExpiration!) : null,
+        licenseNumber: _licenseNumberCtrl.text.trim().isEmpty
+            ? null
+            : _licenseNumberCtrl.text.trim(),
+        licenseExpiration:
+            _licenseExpiration != null ? _fmtApi(_licenseExpiration!) : null,
       );
 
       if (!mounted) return;
-      _showSuccessSheet();
+
+      // FIX ② : on utilise `apiResponse` (plus `body`)
+      final apiData = apiResponse['data'] as Map<String, dynamic>;
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => BookingConfirmationScreen(
+            booking: BookingConfirmation.fromApiResponse(
+              data: apiData,
+              carName: widget.car.fullName,
+              carImageUrl: widget.car.imageUrl,
+              location: _addressCtrl.text.trim(),
+            ),
+          ),
+        ),
+      );
     } on _ApiException catch (e) {
       if (e.statusCode == 422 && e.errors != null) {
         final mapped = <String, String>{};
@@ -407,9 +450,13 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
         });
         setState(() => _fieldErrors = mapped);
         _showSnack(e.message, isError: true);
-        // Jump back to step that has errors
-        if (_hasStep0Errors(mapped)) setState(() => _step = 0);
-        else if (mapped.containsKey('cin') || mapped.containsKey('driving_license')) setState(() => _step = 1);
+        // FIX ③ : blocs if avec accolades (curly_braces warning)
+        if (_hasStep0Errors(mapped)) {
+          setState(() => _step = 0);
+        } else if (mapped.containsKey('cin') ||
+            mapped.containsKey('driving_license')) {
+          setState(() => _step = 1);
+        }
       } else {
         _showSnack(e.message, isError: true);
       }
@@ -427,82 +474,10 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       m.containsKey('address');
 
   void _showSnack(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message),
-      backgroundColor: isError ? AppColors.error : AppColors.success,
-    ));
-  }
-
-  void _showSuccessSheet() {
-    showModalBottomSheet(
-      context: context,
-      isDismissible: false,
-      enableDrag: false,
-      isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppSizes.radiusXL)),
-      ),
-      builder: (_) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 72,
-                height: 72,
-                decoration: BoxDecoration(
-                  color: AppColors.success.withOpacity(0.12),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.check_rounded, color: AppColors.success, size: 40),
-              ),
-              const SizedBox(height: 20),
-              Text('Réservation soumise !', style: AppTextStyles.h2, textAlign: TextAlign.center),
-              const SizedBox(height: 10),
-              Text(
-                'Votre demande est en cours de traitement. '
-                'Vous recevrez une confirmation par email.',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
-                textAlign: TextAlign.center,
-              ),
-              const SizedBox(height: 10),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.statusPending.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(AppSizes.radiusFull),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.hourglass_top_rounded, size: 14, color: AppColors.statusPending),
-                    const SizedBox(width: 6),
-                    Text(
-                      'En attente de validation admin',
-                      style: AppTextStyles.labelUppercase.copyWith(
-                        color: AppColors.statusPending,
-                        fontSize: 10,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 28),
-              SizedBox(
-                width: double.infinity,
-                height: AppSizes.buttonHeight,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).popUntil((r) => r.isFirst);
-                  },
-                  child: const Text('Retour à l\'accueil'),
-                ),
-              ),
-            ],
-          ),
-        ),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.error : AppColors.success,
       ),
     );
   }
@@ -527,11 +502,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Car summary always visible
                     _buildCarSummary(),
                     const SizedBox(height: 24),
-
-                    // Step content
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 260),
                       child: _step == 0
@@ -580,7 +552,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   }
 
   // ─────────────────────────────────────────────────────
-  // STEP INDICATOR
+  // STEPPER
   // ─────────────────────────────────────────────────────
 
   Widget _buildStepper() {
@@ -591,7 +563,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       child: Row(
         children: List.generate(steps.length * 2 - 1, (i) {
           if (i.isOdd) {
-            // Connector line
             final stepIndex = i ~/ 2;
             final done = stepIndex < _step;
             return Expanded(
@@ -611,26 +582,28 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 width: 30,
                 height: 30,
                 decoration: BoxDecoration(
-                  color: isDone
+                  color: isDone || isActive
                       ? AppColors.primary
-                      : isActive
-                          ? AppColors.primary
-                          : AppColors.surfaceVariant,
+                      : AppColors.surfaceVariant,
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: isActive || isDone ? AppColors.primary : AppColors.divider,
+                    color: isActive || isDone
+                        ? AppColors.primary
+                        : AppColors.divider,
                     width: 1.5,
                   ),
                 ),
                 child: Center(
                   child: isDone
-                      ? const Icon(Icons.check_rounded, color: Colors.white, size: 16)
+                      ? const Icon(Icons.check_rounded,
+                          color: Colors.white, size: 16)
                       : Text(
                           '${stepIndex + 1}',
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w700,
-                            color: isActive ? Colors.white : AppColors.textHint,
+                            color:
+                                isActive ? Colors.white : AppColors.textHint,
                           ),
                         ),
                 ),
@@ -640,8 +613,11 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 steps[stepIndex],
                 style: AppTextStyles.caption.copyWith(
                   fontSize: 9,
-                  color: isActive || isDone ? AppColors.primary : AppColors.textHint,
-                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w400,
+                  color: isActive || isDone
+                      ? AppColors.primary
+                      : AppColors.textHint,
+                  fontWeight:
+                      isActive ? FontWeight.w700 : FontWeight.w400,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -658,7 +634,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
 
   Widget _buildCarSummary() {
     final days = widget.endDate.difference(widget.startDate).inDays;
-    final total = widget.priceSummary?.totalAmount ?? (widget.car.pricePerDay * days);
 
     return Container(
       decoration: BoxDecoration(
@@ -669,7 +644,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       clipBehavior: Clip.antiAlias,
       child: Column(
         children: [
-          // Image
           if (widget.car.imageUrl != null)
             AspectRatio(
               aspectRatio: 16 / 7,
@@ -681,8 +655,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
             )
           else
             _carImagePh(),
-
-          // Info row
           Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -701,7 +673,10 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                             ),
                           ),
                           const SizedBox(height: 2),
-                          Text(widget.car.fullName, style: AppTextStyles.h3.copyWith(fontSize: 17)),
+                          Text(
+                            widget.car.fullName,
+                            style: AppTextStyles.h3.copyWith(fontSize: 17),
+                          ),
                         ],
                       ),
                     ),
@@ -712,7 +687,10 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                           '\$${widget.car.pricePerDay.round()}',
                           style: AppTextStyles.price.copyWith(fontSize: 20),
                         ),
-                        Text('per day', style: AppTextStyles.caption.copyWith(fontSize: 10)),
+                        Text(
+                          'per day',
+                          style: AppTextStyles.caption.copyWith(fontSize: 10),
+                        ),
                       ],
                     ),
                   ],
@@ -720,7 +698,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 const SizedBox(height: 12),
                 const Divider(height: 1),
                 const SizedBox(height: 12),
-                // Schedule
                 Row(
                   children: [
                     _scheduleChip(
@@ -729,7 +706,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                       value: _fmtDate(widget.startDate),
                     ),
                     const SizedBox(width: 6),
-                    const Icon(Icons.arrow_forward_rounded, size: 14, color: AppColors.textHint),
+                    const Icon(Icons.arrow_forward_rounded,
+                        size: 14, color: AppColors.textHint),
                     const SizedBox(width: 6),
                     _scheduleChip(
                       icon: Icons.event_repeat_rounded,
@@ -738,10 +716,12 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                     ),
                     const Spacer(),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(AppSizes.radiusFull),
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusFull),
                       ),
                       child: Text(
                         '$days day${days != 1 ? 's' : ''}',
@@ -764,14 +744,23 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   Widget _carImagePh() => Container(
         height: 120,
         color: AppColors.surfaceVariant,
-        child: const Center(child: Icon(Icons.directions_car, size: 48, color: AppColors.textHint)),
+        child: const Center(
+          child:
+              Icon(Icons.directions_car, size: 48, color: AppColors.textHint),
+        ),
       );
 
-  Widget _scheduleChip({required IconData icon, required String label, required String value}) {
+  Widget _scheduleChip({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: AppTextStyles.caption.copyWith(fontSize: 9, letterSpacing: 0.8)),
+        Text(label,
+            style:
+                AppTextStyles.caption.copyWith(fontSize: 9, letterSpacing: 0.8)),
         const SizedBox(height: 2),
         Row(
           children: [
@@ -779,10 +768,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
             const SizedBox(width: 4),
             Text(
               value,
-              style: AppTextStyles.bodySmall.copyWith(
-                fontWeight: FontWeight.w600,
-                color: AppColors.textPrimary,
-              ),
+              style: AppTextStyles.bodySmall
+                  .copyWith(fontWeight: FontWeight.w600, color: AppColors.textPrimary),
             ),
           ],
         ),
@@ -807,7 +794,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           hint: 'Hamza Lalami',
           icon: Icons.person_outline_rounded,
           apiError: _fieldErrors['full_name'],
-          validator: (v) => (v == null || v.trim().isEmpty) ? 'Nom complet requis' : null,
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Nom complet requis' : null,
           keyboardType: TextInputType.name,
           textCapitalization: TextCapitalization.words,
         ),
@@ -820,7 +808,9 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           apiError: _fieldErrors['email'],
           validator: (v) {
             if (v == null || v.trim().isEmpty) return 'Email requis';
-            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(v)) return 'Email invalide';
+            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(v)) {
+              return 'Email invalide';
+            }
             return null;
           },
           keyboardType: TextInputType.emailAddress,
@@ -832,7 +822,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           hint: '0600000000',
           icon: Icons.phone_outlined,
           apiError: _fieldErrors['phone'],
-          validator: (v) => (v == null || v.trim().isEmpty) ? 'Téléphone requis' : null,
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Téléphone requis' : null,
           keyboardType: TextInputType.phone,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
         ),
@@ -843,7 +834,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           hint: 'Casablanca, Maroc',
           icon: Icons.location_on_outlined,
           apiError: _fieldErrors['address'],
-          validator: (v) => (v == null || v.trim().isEmpty) ? 'Adresse requise' : null,
+          validator: (v) =>
+              (v == null || v.trim().isEmpty) ? 'Adresse requise' : null,
           keyboardType: TextInputType.streetAddress,
           maxLines: 2,
         ),
@@ -876,10 +868,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           style: AppTextStyles.bodySmall.copyWith(color: AppColors.textHint),
         ),
         const SizedBox(height: 20),
-
-        // CIN
         _documentUploader(
-          label: 'CIN / Carte d\'Identité',
+          label: "CIN / Carte d'Identité",
           subtitle: 'Recto ou recto-verso (JPG, PNG ou PDF)',
           icon: Icons.badge_outlined,
           file: _cinFile,
@@ -892,8 +882,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           }),
         ),
         const SizedBox(height: 16),
-
-        // Driving license
         _documentUploader(
           label: 'Permis de Conduire',
           subtitle: 'Recto ou recto-verso (JPG, PNG ou PDF)',
@@ -908,7 +896,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           }),
         ),
         const SizedBox(height: 28),
-
         _sectionLabel('License Details (optional)'),
         const SizedBox(height: 16),
         _inputField(
@@ -931,11 +918,14 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
 
   // ─────────────────────────────────────────────────────
   // STEP 2 — REVIEW
+  // FIX: variable `total` maintenant utilisée dans le widget
   // ─────────────────────────────────────────────────────
 
   Widget _buildStep2Review() {
     final days = widget.endDate.difference(widget.startDate).inDays;
-    final total = widget.priceSummary?.totalAmount ?? (widget.car.pricePerDay * days);
+    // FIX ④ : `total` utilisé directement dans le Text ci-dessous
+    final total =
+        widget.priceSummary?.totalAmount ?? (widget.car.pricePerDay * days);
 
     return Column(
       key: const ValueKey('step2'),
@@ -954,7 +944,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
             children: [
               _fareRow('Daily Rate', '\$${widget.car.pricePerDay.round()}.00'),
               const SizedBox(height: 12),
-              _fareRow('Rental Duration', '$days day${days != 1 ? 's' : ''}'),
+              _fareRow(
+                  'Rental Duration', '$days day${days != 1 ? 's' : ''}'),
               const SizedBox(height: 12),
               _fareRow('Insurance & Service', 'Included'),
               const Padding(
@@ -965,9 +956,11 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                 children: [
                   Text(
                     'TOTAL PRICE',
-                    style: AppTextStyles.labelUppercase.copyWith(color: AppColors.textPrimary),
+                    style: AppTextStyles.labelUppercase
+                        .copyWith(color: AppColors.textPrimary),
                   ),
                   const Spacer(),
+                  // FIX ④ : `total` est bien utilisé ici
                   Text(
                     '\$${total.toStringAsFixed(2)}',
                     style: AppTextStyles.price.copyWith(fontSize: 26),
@@ -991,38 +984,40 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
         _sectionLabel('Documents'),
         const SizedBox(height: 16),
         _docReviewTile(
-          label: 'CIN',
-          file: _cinFile,
-          icon: Icons.badge_outlined,
-        ),
+            label: 'CIN', file: _cinFile, icon: Icons.badge_outlined),
         const SizedBox(height: 10),
         _docReviewTile(
           label: 'Permis de conduire',
           file: _licenseFile,
           icon: Icons.drive_file_rename_outline_rounded,
         ),
-        if (_licenseNumberCtrl.text.isNotEmpty || _licenseExpiration != null) ...[
+        if (_licenseNumberCtrl.text.isNotEmpty ||
+            _licenseExpiration != null) ...[
           const SizedBox(height: 20),
           _sectionLabel('License Details'),
           const SizedBox(height: 16),
           _reviewTable({
-            if (_licenseNumberCtrl.text.isNotEmpty) 'License N°': _licenseNumberCtrl.text,
-            if (_licenseExpiration != null) 'Expiration': _fmtDate(_licenseExpiration!),
+            if (_licenseNumberCtrl.text.isNotEmpty)
+              'License N°': _licenseNumberCtrl.text,
+            if (_licenseExpiration != null)
+              'Expiration': _fmtDate(_licenseExpiration!),
           }),
         ],
         const SizedBox(height: 20),
-        // Disclaimer
         Container(
           padding: const EdgeInsets.all(14),
           decoration: BoxDecoration(
-            color: AppColors.statusPending.withOpacity(0.07),
+            color: AppColors.statusPending.withValues(alpha: 0.07),
             borderRadius: BorderRadius.circular(AppSizes.radiusMD),
-            border: Border.all(color: AppColors.statusPending.withOpacity(0.25)),
+            border: Border.all(
+              color: AppColors.statusPending.withValues(alpha: 0.25),
+            ),
           ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Icon(Icons.info_outline_rounded, color: AppColors.statusPending, size: 18),
+              const Icon(Icons.info_outline_rounded,
+                  color: AppColors.statusPending, size: 18),
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
@@ -1044,9 +1039,13 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   Widget _fareRow(String label, String value) {
     return Row(
       children: [
-        Text(label, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+        Text(label,
+            style: AppTextStyles.bodyMedium
+                .copyWith(color: AppColors.textSecondary)),
         const Spacer(),
-        Text(value, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+        Text(value,
+            style:
+                AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
       ],
     );
   }
@@ -1065,21 +1064,22 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           return Column(
             children: [
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 child: Row(
                   children: [
                     Expanded(
                       flex: 2,
-                      child: Text(
-                        item.key,
-                        style: AppTextStyles.bodySmall.copyWith(color: AppColors.textHint),
-                      ),
+                      child: Text(item.key,
+                          style: AppTextStyles.bodySmall
+                              .copyWith(color: AppColors.textHint)),
                     ),
                     Expanded(
                       flex: 3,
                       child: Text(
                         item.value,
-                        style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w500),
+                        style: AppTextStyles.bodyMedium
+                            .copyWith(fontWeight: FontWeight.w500),
                         textAlign: TextAlign.right,
                       ),
                     ),
@@ -1094,7 +1094,11 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
     );
   }
 
-  Widget _docReviewTile({required String label, required File? file, required IconData icon}) {
+  Widget _docReviewTile({
+    required String label,
+    required File? file,
+    required IconData icon,
+  }) {
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -1108,7 +1112,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: AppColors.success.withOpacity(0.10),
+              color: AppColors.success.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(AppSizes.radiusMD),
             ),
             child: Icon(icon, color: AppColors.success, size: 20),
@@ -1118,7 +1122,9 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600)),
+                Text(label,
+                    style: AppTextStyles.bodyMedium
+                        .copyWith(fontWeight: FontWeight.w600)),
                 Text(
                   file != null ? _fileName(file) : 'Non uploadé',
                   style: AppTextStyles.bodySmall.copyWith(
@@ -1150,7 +1156,13 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 20, offset: const Offset(0, -4))],
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 20,
+            offset: const Offset(0, -4),
+          ),
+        ],
         border: Border(top: BorderSide(color: AppColors.divider, width: 0.8)),
       ),
       child: Column(
@@ -1164,24 +1176,34 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(AppSizes.radiusMD)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(AppSizes.radiusMD)),
                 elevation: 0,
               ),
               child: _submitting
                   ? const SizedBox(
                       width: 22,
                       height: 22,
-                      child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2.5, color: Colors.white),
                     )
                   : Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
                           isLast ? 'CONFIRM RESERVATION' : 'Continue',
-                          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 15, letterSpacing: 0.5),
+                          style: const TextStyle(
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              letterSpacing: 0.5),
                         ),
                         const SizedBox(width: 8),
-                        Icon(isLast ? Icons.bolt_rounded : Icons.arrow_forward_rounded, size: 18),
+                        Icon(
+                          isLast
+                              ? Icons.bolt_rounded
+                              : Icons.arrow_forward_rounded,
+                          size: 18,
+                        ),
                       ],
                     ),
             ),
@@ -1192,7 +1214,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
               onPressed: _prevStep,
               child: Text(
                 'Retour',
-                style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
+                style: AppTextStyles.bodyMedium
+                    .copyWith(color: AppColors.textSecondary),
               ),
             ),
           ],
@@ -1250,27 +1273,32 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
             style: AppTextStyles.bodyMedium,
             validator: validator,
             onChanged: (_) {
-              if (_fieldErrors.containsKey(_fieldKeyFromLabel(label))) {
-                setState(() => _fieldErrors.remove(_fieldKeyFromLabel(label)));
+              final key = _fieldKeyFromLabel(label);
+              if (_fieldErrors.containsKey(key)) {
+                setState(() => _fieldErrors.remove(key));
               }
             },
             decoration: InputDecoration(
               labelText: label,
               hintText: hint,
-              prefixIcon: Icon(icon, size: 18, color: hasError ? AppColors.error : AppColors.textHint),
+              prefixIcon: Icon(icon,
+                  size: 18,
+                  color: hasError ? AppColors.error : AppColors.textHint),
               border: InputBorder.none,
               enabledBorder: InputBorder.none,
               focusedBorder: InputBorder.none,
               errorBorder: InputBorder.none,
               focusedErrorBorder: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               labelStyle: AppTextStyles.bodySmall.copyWith(
                 color: hasError ? AppColors.error : AppColors.textHint,
               ),
               floatingLabelStyle: AppTextStyles.bodySmall.copyWith(
                 color: hasError ? AppColors.error : AppColors.primary,
               ),
-              hintStyle: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
+              hintStyle:
+                  AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
             ),
           ),
         ),
@@ -1278,10 +1306,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
           const SizedBox(height: 4),
           Padding(
             padding: const EdgeInsets.only(left: 4),
-            child: Text(
-              apiError,
-              style: AppTextStyles.caption.copyWith(color: AppColors.error),
-            ),
+            child: Text(apiError,
+                style: AppTextStyles.caption.copyWith(color: AppColors.error)),
           ),
         ],
       ],
@@ -1289,7 +1315,7 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
   }
 
   String _fieldKeyFromLabel(String label) {
-    final map = {
+    const map = {
       'Full Name': 'full_name',
       'Email Address': 'email',
       'Phone Number': 'phone',
@@ -1320,19 +1346,22 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: controller.text.isEmpty
-                  ? Text(label, style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint))
+                  ? Text(label,
+                      style: AppTextStyles.bodyMedium
+                          .copyWith(color: AppColors.textHint))
                   : Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          label,
-                          style: AppTextStyles.caption.copyWith(color: AppColors.primary, fontSize: 10),
-                        ),
-                        Text(controller.text, style: AppTextStyles.bodyMedium),
+                        Text(label,
+                            style: AppTextStyles.caption.copyWith(
+                                color: AppColors.primary, fontSize: 10)),
+                        Text(controller.text,
+                            style: AppTextStyles.bodyMedium),
                       ],
                     ),
             ),
-            Icon(Icons.chevron_right_rounded, color: AppColors.textHint, size: 18),
+            const Icon(Icons.chevron_right_rounded,
+                color: AppColors.textHint, size: 18),
           ],
         ),
       ),
@@ -1350,7 +1379,6 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
     required VoidCallback onRemove,
   }) {
     final uploaded = file != null;
-
     return GestureDetector(
       onTap: uploaded ? null : onTap,
       child: Container(
@@ -1377,10 +1405,10 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                   height: 44,
                   decoration: BoxDecoration(
                     color: uploaded
-                        ? AppColors.success.withOpacity(0.10)
+                        ? AppColors.success.withValues(alpha: 0.10)
                         : hasError
-                            ? AppColors.error.withOpacity(0.08)
-                            : AppColors.primary.withOpacity(0.08),
+                            ? AppColors.error.withValues(alpha: 0.08)
+                            : AppColors.primary.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(AppSizes.radiusMD),
                   ),
                   child: Icon(
@@ -1400,15 +1428,15 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                     children: [
                       Row(
                         children: [
-                          Text(
-                            label,
-                            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-                          ),
+                          Text(label,
+                              style: AppTextStyles.bodyMedium
+                                  .copyWith(fontWeight: FontWeight.w600)),
                           const SizedBox(width: 6),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.error.withOpacity(0.10),
+                              color: AppColors.error.withValues(alpha: 0.10),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -1426,9 +1454,8 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                       const SizedBox(height: 2),
                       Text(
                         uploaded ? _fileName(file) : subtitle,
-                        style: AppTextStyles.bodySmall.copyWith(
-                          color: uploaded ? AppColors.textHint : AppColors.textHint,
-                        ),
+                        style: AppTextStyles.bodySmall
+                            .copyWith(color: AppColors.textHint),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
@@ -1442,10 +1469,12 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                       width: 32,
                       height: 32,
                       decoration: BoxDecoration(
-                        color: AppColors.error.withOpacity(0.08),
-                        borderRadius: BorderRadius.circular(AppSizes.radiusMD),
+                        color: AppColors.error.withValues(alpha: 0.08),
+                        borderRadius:
+                            BorderRadius.circular(AppSizes.radiusMD),
                       ),
-                      child: const Icon(Icons.delete_outline_rounded, color: AppColors.error, size: 16),
+                      child: const Icon(Icons.delete_outline_rounded,
+                          color: AppColors.error, size: 16),
                     ),
                   )
                 else
@@ -1453,32 +1482,29 @@ class _ReservationFormScreenState extends State<ReservationFormScreen> {
                     width: 32,
                     height: 32,
                     decoration: BoxDecoration(
-                      color: AppColors.primary.withOpacity(0.08),
+                      color: AppColors.primary.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(AppSizes.radiusMD),
                     ),
-                    child: const Icon(Icons.upload_rounded, color: AppColors.primary, size: 16),
+                    child: const Icon(Icons.upload_rounded,
+                        color: AppColors.primary, size: 16),
                   ),
               ],
             ),
-            // Image preview
             if (uploaded && _isImage(file)) ...[
               const SizedBox(height: 12),
               ClipRRect(
                 borderRadius: BorderRadius.circular(AppSizes.radiusMD),
-                child: Image.file(
-                  file,
-                  height: 120,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
+                child: Image.file(file,
+                    height: 120,
+                    width: double.infinity,
+                    fit: BoxFit.cover),
               ),
             ],
             if (apiError != null) ...[
               const SizedBox(height: 8),
-              Text(
-                apiError,
-                style: AppTextStyles.caption.copyWith(color: AppColors.error),
-              ),
+              Text(apiError,
+                  style:
+                      AppTextStyles.caption.copyWith(color: AppColors.error)),
             ],
           ],
         ),

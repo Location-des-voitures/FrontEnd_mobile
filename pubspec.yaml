@@ -49,6 +49,8 @@ dependencies:
   riverpod_annotation: ^4.0.2
   google_fonts: ^8.0.2
   google_sign_in: ^6.2.1
+  path_provider: ^2.1.2
+  open_filex: ^4.3.2
 
 dev_dependencies:
   flutter_test:

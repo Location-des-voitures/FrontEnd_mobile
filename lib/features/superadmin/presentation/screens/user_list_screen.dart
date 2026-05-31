@@ -9,6 +9,7 @@ import '../../domain/repositories/user_management_repository.dart';
 import '../providers/user_management_provider.dart';
 import 'user_detail_screen.dart';
 import 'user_profile_screen.dart';
+import 'admin_detail_screen.dart';
 
 enum UserRole { loueur, client, superAdmin, admin }
 enum UserStatus { active, inactive }
@@ -342,22 +343,22 @@ class _UsersListScreenState extends ConsumerState<UsersListScreen> {
         itemBuilder: (_, i) => _UserCard(
           user: users[i],
           onTap: () {
-            if (users[i].role == UserRole.loueur) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => UserProfileScreen(user: users[i]),
-                ),
-              );
-            } else {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => UserDetailsScreen(userId: int.parse(users[i].id)),
-                ),
-              );
-            }
-          },
+  if (users[i].role == UserRole.loueur) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AdminDetailScreen(user: users[i]),
+      ),
+    );
+  } else {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => UserDetailsScreen(userId: int.parse(users[i].id)),
+      ),
+    );
+  }
+},
         ),
       ),
     );

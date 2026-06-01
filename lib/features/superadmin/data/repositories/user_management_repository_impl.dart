@@ -207,12 +207,12 @@ class UserManagementRepositoryImpl implements UserManagementRepository {
   }) async {
     try {
       final user = await _datasource.createAdmin(
-        name: name,
-        email: email,
-        password: password,
-        passwordConfirmation: passwordConfirmation,
-        notifyVia: notifyVia,
-      );
+  name: name,
+  email: email,
+  password: password,
+  passwordConfirmation: passwordConfirmation,
+  notifyVia: notifyVia ?? 'password_reset',
+);
       return Right(user);
     } on ValidationException catch (e) {
       return Left(ValidationFailure(message: e.message, errors: e.errors));

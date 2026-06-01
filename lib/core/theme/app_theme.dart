@@ -4,64 +4,51 @@
 library;
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 // ═══════════════════════════════════════════════════════
-// COULEURS (corrigées selon les maquettes)
+// COULEURS
 // ═══════════════════════════════════════════════════════
 
 class AppColors {
   AppColors._();
 
-  // ── Couleurs principales ─────────────────────────────
-  // Bleu vif des boutons, liens, bottom nav active
-  static const Color primary = Color(0xFF3B5BDB);        // Bleu vif (boutons, CTA)
-  static const Color primaryLight = Color(0xFF5B7CF7);    // Bleu clair (hover, badges)
-  static const Color primaryDark = Color(0xFF2B44A8);     // Bleu foncé (pressed state)
+  static const Color primary = Color(0xFF3B5BDB);
+  static const Color primaryLight = Color(0xFF5B7CF7);
+  static const Color primaryDark = Color(0xFF2B44A8);
 
-  // ── Couleurs de fond ─────────────────────────────────
-  // Fond crème/beige léger visible dans toutes les maquettes
-  static const Color background = Color(0xFFF8F7F4);      // Crème très léger
-  static const Color surface = Color(0xFFFFFFFF);          // Blanc (cards, modals)
-  static const Color card = Color(0xFFFFFFFF);             // Blanc
-  static const Color surfaceVariant = Color(0xFFF2F1EE);   // Crème pour les sections
+  static const Color background = Color(0xFFF8F7F4);
+  static const Color surface = Color(0xFFFFFFFF);
+  static const Color card = Color(0xFFFFFFFF);
+  static const Color surfaceVariant = Color(0xFFF2F1EE);
 
-  // ── Texte ────────────────────────────────────────────
-  static const Color textPrimary = Color(0xFF1A1A2E);     // Titres, texte principal
-  static const Color textSecondary = Color(0xFF6B7280);   // Sous-titres, labels
-  static const Color textHint = Color(0xFF9CA3AF);        // Placeholders, hints
+  static const Color textPrimary = Color(0xFF1A1A2E);
+  static const Color textSecondary = Color(0xFF6B7280);
+  static const Color textHint = Color(0xFF9CA3AF);
 
-  // ── Statuts ──────────────────────────────────────────
-  static const Color success = Color(0xFF10B981);         // Vert (ACTIVE, AVAILABLE)
-  static const Color warning = Color(0xFFF59E0B);         // Jaune/Or (PENDING, DUE SOON)
-  static const Color error = Color(0xFFEF4444);           // Rouge (REFUSED, CANCELLED, OVERDUE)
-  static const Color info = Color(0xFF3B82F6);            // Bleu info (RESERVED, CONFIRMED)
+  static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFF59E0B);
+  static const Color error = Color(0xFFEF4444);
+  static const Color info = Color(0xFF3B82F6);
 
-  // ── Statuts de réservation ───────────────────────────
-  static const Color statusPending = Color(0xFFF59E0B);   // Jaune/Or — PENDING
-  static const Color statusConfirmed = Color(0xFF3B82F6); // Bleu — CONFIRMED/RESERVED
-  static const Color statusActive = Color(0xFF10B981);    // Vert — ACTIVE
-  static const Color statusCompleted = Color(0xFF6B7280); // Gris — COMPLETED
-  static const Color statusCancelled = Color(0xFFEF4444); // Rouge — CANCELLED/REFUSED
-  static const Color statusRented = Color(0xFFF59E0B);    // Jaune/Or — RENTED (cars)
-  static const Color statusMaintenance = Color(0xFFEF4444); // Rouge — MAINTENANCE (cars)
+  static const Color statusPending = Color(0xFFF59E0B);
+  static const Color statusConfirmed = Color(0xFF3B82F6);
+  static const Color statusActive = Color(0xFF10B981);
+  static const Color statusCompleted = Color(0xFF6B7280);
+  static const Color statusCancelled = Color(0xFFEF4444);
+  static const Color statusRented = Color(0xFFF59E0B);
+  static const Color statusMaintenance = Color(0xFFEF4444);
 
-  // ── Alertes spéciales ────────────────────────────────
-  // Orange/brun foncé pour les bannières d'alerte
-  // (Double Booking, Overlapping schedule)
-  static const Color alertBanner = Color(0xFFC4621A);     // Orange brun (bannière alerte)
-  static const Color alertBannerBg = Color(0xFFE8751F);   // Fond bannière alerte
+  static const Color alertBanner = Color(0xFFC4621A);
+  static const Color alertBannerBg = Color(0xFFE8751F);
 
-  // ── Boutons Accept/Refuse ────────────────────────────
-  static const Color acceptButton = Color(0xFF10B981);    // Vert — Accept
-  static const Color refuseButton = Color(0xFFEF4444);    // Rouge — Refuse
-  static const Color editButton = Color(0xFF3B5BDB);      // Bleu — Edit
-  static const Color deleteButton = Color(0xFFDC2626);    // Rouge foncé — Delete
+  static const Color acceptButton = Color(0xFF10B981);
+  static const Color refuseButton = Color(0xFFEF4444);
+  static const Color editButton = Color(0xFF3B5BDB);
+  static const Color deleteButton = Color(0xFFDC2626);
 
-  // ── Divers ───────────────────────────────────────────
-  static const Color divider = Color(0xFFE8E7E4);         // Beige/gris léger
-  static const Color shadow = Color(0x0D000000);           // Ombre très légère
-  static const Color starRating = Color(0xFFF59E0B);       // Étoiles dorées (clients)
+  static const Color divider = Color(0xFFE8E7E4);
+  static const Color shadow = Color(0x0D000000);
+  static const Color starRating = Color(0xFFF59E0B);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -71,7 +58,6 @@ class AppColors {
 class AppTextStyles {
   AppTextStyles._();
 
-  // ── Headings ─────────────────────────────────────────
   static const TextStyle h1 = TextStyle(
     fontSize: 28,
     fontWeight: FontWeight.w700,
@@ -93,7 +79,6 @@ class AppTextStyles {
     height: 1.3,
   );
 
-  // ── Body ─────────────────────────────────────────────
   static const TextStyle bodyLarge = TextStyle(
     fontSize: 16,
     fontWeight: FontWeight.w400,
@@ -115,8 +100,6 @@ class AppTextStyles {
     height: 1.5,
   );
 
-  // ── Labels ───────────────────────────────────────────
-  // Labels en UPPERCASE tracking élevé (comme dans les maquettes)
   static const TextStyle labelUppercase = TextStyle(
     fontSize: 11,
     fontWeight: FontWeight.w600,
@@ -143,7 +126,6 @@ class AppTextStyles {
     color: AppColors.textHint,
   );
 
-  // ── Prix ─────────────────────────────────────────────
   static const TextStyle price = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w700,
@@ -156,7 +138,6 @@ class AppTextStyles {
     color: AppColors.primary,
   );
 
-  // ── Prix en vert (revenue, total paid) ───────────────
   static const TextStyle priceGreen = TextStyle(
     fontSize: 22,
     fontWeight: FontWeight.w700,
@@ -171,49 +152,46 @@ class AppTextStyles {
 class AppSizes {
   AppSizes._();
 
-  // ── Padding ──────────────────────────────────────────
   static const double paddingXS = 4;
   static const double paddingSM = 8;
   static const double paddingMD = 16;
   static const double paddingLG = 24;
   static const double paddingXL = 32;
 
-  // ── Border Radius ────────────────────────────────────
   static const double radiusSM = 8;
   static const double radiusMD = 12;
   static const double radiusLG = 16;
   static const double radiusXL = 24;
   static const double radiusFull = 100;
 
-  // ── Tailles d'icônes ─────────────────────────────────
   static const double iconSM = 18;
   static const double iconMD = 24;
   static const double iconLG = 32;
 
-  // ── Hauteur des boutons ──────────────────────────────
   static const double buttonHeight = 52;
   static const double inputHeight = 52;
 
-  // ── Bottom Navigation Bar ────────────────────────────
   static const double bottomNavHeight = 64;
 }
 
 // ═══════════════════════════════════════════════════════
-// THÈME MATERIAL (à passer dans MaterialApp)
+// THÈME MATERIAL
 // ═══════════════════════════════════════════════════════
 
 class AppTheme {
   AppTheme._();
 
-  /// Thème clair (principal) — aligné sur les maquettes rRw
   static ThemeData get light {
     return ThemeData(
       useMaterial3: true,
       brightness: Brightness.light,
-      fontFamily: TextStyle(fontFamily: 'Roboto', fontWeight: FontWeight.bold, fontStyle: FontStyle.italic)
-.fontFamily,
 
-      // ── Color Scheme ─────────────────────────────────
+      // FIX: la ligne `fontFamily: TextStyle(...).fontFamily` a été
+      // supprimée — c'était elle qui déclenchait GoogleFonts.roboto()
+      // et causait le crash "Roboto-ExtraBold not found" sur Flutter Web.
+      // Flutter utilisera la font système (Roboto sur Android,
+      // SF Pro sur iOS, sans-serif sur Web) — comportement correct.
+
       colorScheme: const ColorScheme.light(
         primary: AppColors.primary,
         onPrimary: Colors.white,
@@ -227,7 +205,6 @@ class AppTheme {
 
       scaffoldBackgroundColor: AppColors.background,
 
-      // ── AppBar ───────────────────────────────────────
       appBarTheme: const AppBarTheme(
         backgroundColor: Colors.white,
         foregroundColor: AppColors.textPrimary,
@@ -241,7 +218,6 @@ class AppTheme {
         ),
       ),
 
-      // ── Boutons ──────────────────────────────────────
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           backgroundColor: AppColors.primary,
@@ -274,8 +250,6 @@ class AppTheme {
         ),
       ),
 
-      // ── Input Fields ─────────────────────────────────
-      // Style "underline" comme dans les maquettes signup/login
       inputDecorationTheme: InputDecorationTheme(
         filled: false,
         contentPadding: const EdgeInsets.symmetric(
@@ -301,7 +275,6 @@ class AppTheme {
         ),
       ),
 
-      // ── Cards ────────────────────────────────────────
       cardTheme: CardThemeData(
         color: AppColors.card,
         elevation: 0,
@@ -311,7 +284,6 @@ class AppTheme {
         margin: const EdgeInsets.symmetric(vertical: AppSizes.paddingSM),
       ),
 
-      // ── Bottom Nav ───────────────────────────────────
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Colors.white,
         selectedItemColor: AppColors.primary,
@@ -330,12 +302,12 @@ class AppTheme {
         ),
       ),
 
-      // ── Chips (filtres brand, status) ────────────────
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceVariant,
         selectedColor: AppColors.primary,
         labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
-        secondaryLabelStyle: const TextStyle(fontSize: 13, color: Colors.white),
+        secondaryLabelStyle:
+            const TextStyle(fontSize: 13, color: Colors.white),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppSizes.radiusFull),
         ),
@@ -343,14 +315,12 @@ class AppTheme {
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       ),
 
-      // ── Divider ──────────────────────────────────────
       dividerTheme: const DividerThemeData(
         color: AppColors.divider,
         thickness: 0.5,
         space: 1,
       ),
 
-      // ── Snackbar ─────────────────────────────────────
       snackBarTheme: SnackBarThemeData(
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(
@@ -358,15 +328,15 @@ class AppTheme {
         ),
       ),
 
-      // ── Tab Bar (Active/Completed/Cancelled) ─────────
       tabBarTheme: const TabBarThemeData(
         labelColor: AppColors.primary,
         unselectedLabelColor: AppColors.textHint,
         indicatorColor: AppColors.primary,
         indicatorSize: TabBarIndicatorSize.label,
         labelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
-        unselectedLabelStyle: TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
+        unselectedLabelStyle:
+            TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
       ),
     );
   }
-}
+} 

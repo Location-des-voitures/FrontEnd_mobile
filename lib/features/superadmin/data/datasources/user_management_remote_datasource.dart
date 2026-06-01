@@ -100,25 +100,24 @@ class UserManagementRemoteDatasource {
   }
 
   Future<UserModel> createAdmin({
-    required String name,
-    required String email,
-    String? password,
-    String? passwordConfirmation,
-    String? notifyVia,
-  }) async {
-    final response = await _client.post(
-      ApiConstants.createAdmin,
-      data: {
-        'name': name,
-        'email': email,
-        'notify_via': ?notifyVia,
-        'password': ?password,
-        'password_confirmation': ?passwordConfirmation,
-      },
-    );
-
-    return UserModel.fromJson(response.data['data'] as Map<String, dynamic>);
-  }
+  required String name,
+  required String email,
+  required String notifyVia,
+  String? password,
+  String? passwordConfirmation,
+}) async {
+  final response = await _client.post(
+    ApiConstants.createAdmin,
+    data: {
+      'name':       name,
+      'email':      email,
+      'notify_via': notifyVia,                              // ✅ toujours envoyé
+      if (password != null)             'password':              password,
+      if (passwordConfirmation != null) 'password_confirmation': passwordConfirmation,
+    },
+  );
+  return UserModel.fromJson(response.data['data'] as Map<String, dynamic>);
+}
 
   Future<UserModel> activateAdmin(int id) async {
     final response = await _client.put(ApiConstants.activateAdmin(id));

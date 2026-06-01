@@ -71,7 +71,7 @@ class _SuperAdminDashboardScreenState extends State<SuperAdminDashboardScreen> {
     const items = [
       (Icons.dashboard_outlined,      Icons.dashboard_rounded,      'Dashboard'),
       (Icons.people_outline,          Icons.people_alt_rounded,     'Users'),
-      (Icons.directions_car_outlined, Icons.directions_car_rounded, 'Loueurs'),
+      (Icons.directions_car_outlined, Icons.directions_car_rounded, 'Admins'),
       (Icons.credit_card_outlined,    Icons.credit_card_rounded,    'Plans'),
       (Icons.receipt_long_outlined,   Icons.receipt_long_rounded,   'Logs'),
     ];

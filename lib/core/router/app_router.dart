@@ -38,7 +38,11 @@ import '../../features/superadmin/presentation/screens/system_log_screen.dart';
 import '../../features/superadmin/presentation/screens/fleet_alerts_screen.dart';
 
 // ── Client screens ────────────────────────────────────────
+import '../../features/client/presentation/widgets/client_shell.dart';
 import '../../features/dashboard/presentation/screens/client_home_screen.dart';
+import '../../features/client/presentation/screens/reservation_list_screen.dart' as clientRes;
+import '../../features/client/presentation/screens/reservation_detail_screen.dart' as clientResDetail;
+import '../../features/client/presentation/screens/profile_screen.dart';
 
 // ═══════════════════════════════════════════════════════
 // ROUTE PATHS
@@ -73,10 +77,10 @@ class AppRoutes {
   static const String adminHelp         = '/admin/help';
 
   // ── Client ────────────────────────────────────────────
-  static const String clientExplore       = '/client/explore';
-  static const String clientSearch        = '/client/search';
-  static const String clientBookings      = '/client/bookings';
-  static const String clientProfile       = '/client/profile';
+  static const String clientExplore  = '/client/explore';
+  static const String clientSearch   = '/client/search';
+  static const String clientBookings = '/client/bookings';
+  static const String clientProfile  = '/client/profile';
 
   // ── Super Admin ───────────────────────────────────────
   static const String superAdminDashboard = '/superadmin/dashboard';
@@ -96,7 +100,6 @@ final routerProvider = Provider<GoRouter>((ref) {
     debugLogDiagnostics: true,
     refreshListenable: authNotifier,
 
-    // ── Redirect logic ──────────────────────────────────
     redirect: (context, state) {
       final isLoggedIn = authNotifier.isLoggedIn;
       final userRole   = authNotifier.role;
@@ -112,12 +115,10 @@ final routerProvider = Provider<GoRouter>((ref) {
         AppRoutes.resetPassword,
       ];
 
-      // Non connecté → login
       if (!isLoggedIn && !publicRoutes.contains(location)) {
         return AppRoutes.login;
       }
 
-      // Connecté + route publique → home selon rôle
       if (isLoggedIn &&
           publicRoutes.contains(location) &&
           location != AppRoutes.splash) {
@@ -126,19 +127,16 @@ final routerProvider = Provider<GoRouter>((ref) {
         return AppRoutes.clientExplore;
       }
 
-      // Client → ne peut pas accéder à /admin
       if (isLoggedIn && userRole == 'client' &&
           location.startsWith('/admin')) {
         return AppRoutes.clientExplore;
       }
 
-      // Super admin → redirige vers /superadmin
       if (isLoggedIn && userRole == 'super_admin' &&
           !location.startsWith('/superadmin')) {
         return AppRoutes.superAdminDashboard;
       }
 
-      // Admin/superadmin → ne peut pas accéder à /client
       if (isLoggedIn &&
           (userRole == 'admin' || userRole == 'super_admin') &&
           location.startsWith('/client')) {
@@ -191,7 +189,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ════════════════════════════════════════════════
-      // ADMIN — SHELL (tabs avec bottom nav)
+      // ADMIN — SHELL
       // ════════════════════════════════════════════════
 
       ShellRoute(
@@ -250,11 +248,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/admin/cars/:id/edit',
-        builder: (context, state) {
-          // Passe la voiture via state.extra si besoin
-          // final car = state.extra as Car?;
-          return const CarFormScreen();
-        },
+        builder: (context, state) => const CarFormScreen(),
       ),
       GoRoute(
         path: '/admin/cars/:id',
@@ -303,11 +297,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
 
       // ════════════════════════════════════════════════
-      // CLIENT — SHELL
+      // CLIENT — SHELL  ✅ ClientShell avec bottom nav
       // ════════════════════════════════════════════════
 
       ShellRoute(
-        builder: (context, state, child) => Scaffold(body: child),
+        builder: (context, state, child) => ClientShell(child: child),
         routes: [
           GoRoute(
             path: AppRoutes.clientExplore,
@@ -321,15 +315,11 @@ final routerProvider = Provider<GoRouter>((ref) {
           ),
           GoRoute(
             path: AppRoutes.clientBookings,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Bookings — coming soon')),
-            ),
+            builder: (context, state) => const clientRes.ReservationListScreen(),
           ),
           GoRoute(
             path: AppRoutes.clientProfile,
-            builder: (context, state) => const Scaffold(
-              body: Center(child: Text('Profile — coming soon')),
-            ),
+            builder: (context, state) => const ProfileScreen(),
           ),
         ],
       ),
@@ -349,7 +339,7 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/client/bookings/:id',
         builder: (context, state) {
           final id = int.parse(state.pathParameters['id']!);
-          return Scaffold(body: Center(child: Text('Booking $id')));
+          return clientResDetail.ReservationDetailScreen(reservationId: id);
         },
       ),
 
